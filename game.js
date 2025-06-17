@@ -10,7 +10,9 @@ const player = {
   y: 500,
   speed: 3,
   size: 40,
-  angle: 0
+  angle: 0,
+  health: 100,
+  maxHealth: 100
 };
 
 // Tank selection
@@ -85,7 +87,26 @@ function update() {
     bullet.y += Math.sin(bullet.angle) * bullet.speed;
   });
 
-  bullets = bullets.filter(b => b.x > 0 && b.x < 2000 && b.y > 0 && b.y < 2000);
+  // TEMP: Damage player if hit by their own bullet (testing only)
+  bullets.forEach(bullet => {
+    const dx = bullet.x - player.x;
+    const dy = bullet.y - player.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance < player.size / 2) {
+      player.health -= 10;
+      bullet.hit = true;
+    }
+  });
+
+  bullets = bullets.filter(b => !b.hit && b.x > 0 && b.x < 2000 && b.y > 0 && b.y < 2000);
+
+  if (player.health <= 0) {
+    alert("You died!");
+    player.health = player.maxHealth;
+    player.x = 500;
+    player.y = 500;
+    bullets = [];
+  }
 }
 
 function getTankColorByType(type) {
@@ -147,6 +168,24 @@ function drawBullets() {
   });
 }
 
+function drawHealthBar() {
+  const barWidth = 100;
+  const barHeight = 10;
+  const x = canvas.width / 2 - barWidth / 2;
+  const y = canvas.height - 30;
+
+  const healthRatio = player.health / player.maxHealth;
+
+  ctx.fillStyle = "gray";
+  ctx.fillRect(x, y, barWidth, barHeight);
+
+  ctx.fillStyle = healthRatio > 0.5 ? "limegreen" : healthRatio > 0.25 ? "orange" : "red";
+  ctx.fillRect(x, y, barWidth * healthRatio, barHeight);
+
+  ctx.strokeStyle = "black";
+  ctx.strokeRect(x, y, barWidth, barHeight);
+}
+
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -156,6 +195,7 @@ function draw() {
   drawGrid();
   drawBullets();
   drawTank(player.x, player.y, mouseAngle);
+  drawHealthBar();
 }
 
 function gameLoop() {
@@ -163,3 +203,4 @@ function gameLoop() {
   draw();
   requestAnimationFrame(gameLoop);
 }
+
