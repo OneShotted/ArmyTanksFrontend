@@ -13,7 +13,7 @@ const player = {
   angle: 0
 };
 
-// HOME SCREEN: Handle tank selection
+// Tank selection
 document.querySelectorAll(".tank-button").forEach(button => {
   button.addEventListener("click", () => {
     document.querySelectorAll(".tank-button").forEach(btn => btn.classList.remove("selected"));
@@ -22,7 +22,7 @@ document.querySelectorAll(".tank-button").forEach(button => {
   });
 });
 
-// HOME SCREEN: Handle play button
+// Play button
 document.getElementById("play-button").addEventListener("click", () => {
   const nameInput = document.getElementById("username").value.trim();
 
@@ -36,11 +36,9 @@ document.getElementById("play-button").addEventListener("click", () => {
     return;
   }
 
-  // Save info
   username = nameInput;
   tankType = selectedTank;
 
-  // Hide menu and show canvas
   document.getElementById("home-screen").style.display = "none";
   canvas = document.getElementById("gameCanvas");
   ctx = canvas.getContext("2d");
@@ -48,12 +46,10 @@ document.getElementById("play-button").addEventListener("click", () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  // Begin game
   setupControls();
   requestAnimationFrame(gameLoop);
 });
 
-// Input Handling
 function setupControls() {
   document.addEventListener("keydown", (e) => keys[e.key.toLowerCase()] = true);
   document.addEventListener("keyup", (e) => keys[e.key.toLowerCase()] = false);
@@ -69,7 +65,6 @@ function setupControls() {
   });
 }
 
-// Shooting bullets
 function shootBullet() {
   bullets.push({
     x: player.x,
@@ -79,7 +74,6 @@ function shootBullet() {
   });
 }
 
-// Game Update
 function update() {
   if (keys["w"] || keys["arrowup"]) player.y -= player.speed;
   if (keys["s"] || keys["arrowdown"]) player.y += player.speed;
@@ -91,23 +85,57 @@ function update() {
     bullet.y += Math.sin(bullet.angle) * bullet.speed;
   });
 
-  // Remove bullets off-screen
   bullets = bullets.filter(b => b.x > 0 && b.x < 2000 && b.y > 0 && b.y < 2000);
 }
 
-// Draw Tank
+function getTankColorByType(type) {
+  switch (type) {
+    case "scout": return "limegreen";
+    case "sniper": return "skyblue";
+    case "heavy": return "crimson";
+    default: return "gray";
+  }
+}
+
+function drawGrid() {
+  const gridSize = 50;
+  const offsetX = player.x % gridSize;
+  const offsetY = player.y % gridSize;
+
+  ctx.strokeStyle = "#444";
+  ctx.lineWidth = 1;
+
+  for (let x = -offsetX; x < canvas.width; x += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+
+  for (let y = -offsetY; y < canvas.height; y += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+}
+
 function drawTank(x, y, angle) {
+  const tankColor = getTankColorByType(tankType);
+
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.rotate(angle);
-  ctx.fillStyle = "green";
-  ctx.fillRect(-20, -20, 40, 40); // Tank body
+
+  ctx.fillStyle = tankColor;
+  ctx.fillRect(-20, -20, 40, 40); // Body
+
   ctx.fillStyle = "black";
   ctx.fillRect(15, -5, 25, 10); // Cannon
+
   ctx.restore();
 }
 
-// Draw Bullets
 function drawBullets() {
   ctx.fillStyle = "yellow";
   bullets.forEach(b => {
@@ -119,25 +147,19 @@ function drawBullets() {
   });
 }
 
-// Game Draw
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Background
   ctx.fillStyle = "#2b2b2b";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Bullets
+  drawGrid();
   drawBullets();
-
-  // Tank
   drawTank(player.x, player.y, mouseAngle);
 }
 
-// Main Loop
 function gameLoop() {
   update();
   draw();
   requestAnimationFrame(gameLoop);
 }
-
