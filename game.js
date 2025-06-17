@@ -72,7 +72,8 @@ function shootBullet() {
     x: player.x,
     y: player.y,
     angle: mouseAngle,
-    speed: 6
+    speed: 6,
+    shooter: "player" // Mark the bullet as fired by the player
   });
 }
 
@@ -87,8 +88,10 @@ function update() {
     bullet.y += Math.sin(bullet.angle) * bullet.speed;
   });
 
-  // TEMP: Damage player if hit by their own bullet (testing only)
+  // Only take damage from bullets not shot by the player
   bullets.forEach(bullet => {
+    if (bullet.shooter === "player") return;
+
     const dx = bullet.x - player.x;
     const dy = bullet.y - player.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -203,4 +206,5 @@ function gameLoop() {
   draw();
   requestAnimationFrame(gameLoop);
 }
+
 
