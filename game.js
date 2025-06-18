@@ -8,6 +8,7 @@ let playerId = null;
 
 let players = {};
 let bullets = [];
+let previousPositions = {};
 
 // Tank selection
 document.querySelectorAll(".tank-button").forEach(button => {
@@ -81,10 +82,11 @@ function update() {
 
   const p = players[playerId];
 
-  if (keys["w"] || keys["arrowup"]) p.y -= 3;
-  if (keys["s"] || keys["arrowdown"]) p.y += 3;
-  if (keys["a"] || keys["arrowleft"]) p.x -= 3;
-  if (keys["d"] || keys["arrowright"]) p.x += 3;
+  const speed = 3;
+  if (keys["w"] || keys["arrowup"]) p.y -= speed;
+  if (keys["s"] || keys["arrowdown"]) p.y += speed;
+  if (keys["a"] || keys["arrowleft"]) p.x -= speed;
+  if (keys["d"] || keys["arrowright"]) p.x += speed;
 
   p.angle = mouseAngle;
 
@@ -128,8 +130,24 @@ function drawGrid(centerX, centerY) {
 }
 
 function drawTank(player, isSelf) {
-  const screenX = canvas.width / 2 + (player.x - players[playerId].x);
-  const screenY = canvas.height / 2 + (player.y - players[playerId].y);
+  let x = player.x;
+  let y = player.y;
+
+  if (!isSelf) {
+    if (!previousPositions[player.id]) {
+      previousPositions[player.id] = { x: player.x, y: player.y };
+    }
+
+    // Smoothly interpolate
+    previousPositions[player.id].x += (player.x - previousPositions[player.id].x) * 0.1;
+    previousPositions[player.id].y += (player.y - previousPositions[player.id].y) * 0.1;
+
+    x = previousPositions[player.id].x;
+    y = previousPositions[player.id].y;
+  }
+
+  const screenX = canvas.width / 2 + (x - players[playerId].x);
+  const screenY = canvas.height / 2 + (y - players[playerId].y);
 
   ctx.save();
   ctx.translate(screenX, screenY);
@@ -183,5 +201,4 @@ function gameLoop() {
   draw();
   requestAnimationFrame(gameLoop);
 }
-
 
