@@ -1,4 +1,4 @@
-const socket = io('https://armytanksbackend.onrender.com'); // Change if needed
+const socket = io('https://armytanksbackend.onrender.com');
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -6,15 +6,19 @@ const ctx = canvas.getContext('2d');
 let playerId;
 let players = {};
 let enemies = [];
+let drops = [];
 
 let keys = {};
 let showInventory = false;
+let isAttacking = false;
 
 document.addEventListener('keydown', e => {
     keys[e.key] = true;
     if (e.key === 'i') showInventory = !showInventory;
 });
 document.addEventListener('keyup', e => keys[e.key] = false);
+document.addEventListener('mousedown', e => { if (e.button === 0) isAttacking = true; });
+document.addEventListener('mouseup', e => { if (e.button === 0) isAttacking = false; });
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -32,12 +36,28 @@ function draw() {
     const offsetX = canvas.width / 2 - me.x;
     const offsetY = canvas.height / 2 - me.y;
 
-    // Draw all players
+    // Draw enemies
+    enemies.forEach(e => {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(e.x + offsetX, e.y + offsetY, 30, 30);
+        ctx.fillStyle = 'white';
+        ctx.fillText(`HP: ${e.hp}`, e.x + offsetX, e.y + offsetY - 5);
+    });
+
+    // Draw drops
+    drops.forEach(d => {
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(d.x + offsetX, d.y + offsetY, 8, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Draw players
     for (const id in players) {
         const p = players[id];
         const isMe = id === playerId;
 
-        // Player core
+        // Core
         ctx.fillStyle = isMe ? 'lime' : 'white';
         ctx.beginPath();
         ctx.arc(p.x + offsetX, p.y + offsetY, 20, 0, Math.PI * 2);
@@ -46,31 +66,36 @@ function draw() {
         // Orbiting petals
         if (isMe && p.petals) {
             const time = Date.now() / 500;
-            const radius = 40;
+            const baseRadius = isAttacking ? 70 : 40;
             p.petals.forEach((petal, i) => {
                 const angle = time + (i / p.petals.length) * Math.PI * 2;
-                const px = p.x + Math.cos(angle) * radius;
-                const py = p.y + Math.sin(angle) * radius;
+                const px = p.x + Math.cos(angle) * baseRadius;
+                const py = p.y + Math.sin(angle) * baseRadius;
+
+                // Send petal position to server
+                if (isAttacking) {
+                    socket.emit('petalAttack', { petalId: petal.id, x: px, y: py });
+                }
+
                 ctx.fillStyle = 'white';
                 ctx.beginPath();
                 ctx.arc(px + offsetX, py + offsetY, 10, 0, Math.PI * 2);
                 ctx.fill();
+
+                // Health bar
+                ctx.fillStyle = 'red';
+                ctx.fillRect(px + offsetX - 10, py + offsetY + 12, 20, 4);
+                ctx.fillStyle = 'lime';
+                ctx.fillRect(px + offsetX - 10, py + offsetY + 12, 20 * (petal.hp / 3), 4);
             });
         }
     }
 
-    // Draw enemies
-    enemies.forEach(e => {
-        ctx.fillStyle = 'red';
-        ctx.fillRect(e.x + offsetX, e.y + offsetY, 30, 30);
-    });
-
-    // HOTBAR UI (bottom center)
+    // HOTBAR
     const hotbar = players[playerId]?.petals || [];
     const hotbarWidth = hotbar.length * 50;
     const hotbarX = canvas.width / 2 - hotbarWidth / 2;
     const hotbarY = canvas.height - 60;
-
     hotbar.forEach((petal, i) => {
         ctx.fillStyle = 'white';
         ctx.beginPath();
@@ -78,15 +103,13 @@ function draw() {
         ctx.fill();
     });
 
-    // Inventory (toggleable)
+    // INVENTORY
     if (showInventory) {
         ctx.fillStyle = 'rgba(0,0,0,0.8)';
         ctx.fillRect(20, 20, 300, 300);
-
         ctx.fillStyle = 'white';
         ctx.font = '18px Arial';
         ctx.fillText('Inventory:', 30, 50);
-
         const inventory = players[playerId]?.inventory || [];
         inventory.forEach((petal, i) => {
             const x = 30 + (i % 5) * 55;
@@ -110,13 +133,6 @@ function update() {
     if (keys['d']) dx += 5;
 
     socket.emit('move', { dx, dy });
-
-    enemies.forEach(enemy => {
-        const dist = Math.hypot(p.x - enemy.x, p.y - enemy.y);
-        if (dist < 30) {
-            socket.emit('collect', enemy.id);
-        }
-    });
 }
 
 function loop() {
@@ -129,15 +145,12 @@ socket.on('init', data => {
     playerId = data.id;
     players = data.players;
     enemies = data.enemies;
+    drops = data.drops;
 });
 
-socket.on('players', data => {
-    players = data;
-});
-
-socket.on('enemies', data => {
-    enemies = data;
-});
+socket.on('players', data => players = data);
+socket.on('enemies', data => enemies = data);
+socket.on('drops', data => drops = data);
 
 loop();
 
