@@ -15,8 +15,8 @@ const enemies = [];
 function createEnemy() {
     return {
         id: Date.now() + Math.random(),
-        x: Math.random() * 1000,
-        y: Math.random() * 1000,
+        x: Math.random() * 2000,
+        y: Math.random() * 2000,
         hp: 3,
         drop: 'basic'
     };
@@ -46,19 +46,22 @@ io.on('connection', socket => {
         enemies
     });
 
+    io.emit('players', players);
+
     socket.on('move', data => {
-        if (players[socket.id]) {
-            players[socket.id].x += data.dx;
-            players[socket.id].y += data.dy;
+        const player = players[socket.id];
+        if (player) {
+            player.x += data.dx;
+            player.y += data.dy;
+            io.emit('players', players); // <== emit updates to all clients
         }
     });
 
     socket.on('collect', enemyId => {
         const enemy = enemies.find(e => e.id === enemyId);
-        if (enemy) {
+        if (enemy && players[socket.id]) {
             players[socket.id].petals.push(enemy.drop);
-            const index = enemies.indexOf(enemy);
-            enemies.splice(index, 1);
+            enemies.splice(enemies.indexOf(enemy), 1);
             io.emit('enemies', enemies);
         }
     });
@@ -70,3 +73,4 @@ io.on('connection', socket => {
 });
 
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
