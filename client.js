@@ -76,8 +76,10 @@ canvas.addEventListener('mouseup', e => {
         const y = hotbarY + 25;
         if (Math.hypot(mouseX - x, mouseY - y) < 20) {
             if (dragOrigin.from === 'inventory') {
+                // Fixed: swap inventory petal with hotbar petal
                 players[playerId].inventory.splice(dragOrigin.index, 1);
-                players[playerId].inventory.push(petals[i]);
+                const replaced = players[playerId].petals[i];
+                if (replaced) players[playerId].inventory.push(replaced);
                 players[playerId].petals[i] = draggedPetal;
             } else if (dragOrigin.from === 'hotbar') {
                 const temp = players[playerId].petals[i];
@@ -158,11 +160,11 @@ function draw() {
         // Eyes and smile (face)
         ctx.fillStyle = 'black';
         ctx.beginPath();
-        ctx.arc(p.x + offsetX - 6, p.y + offsetY - 5, 2, 0, Math.PI * 2); // left eye
-        ctx.arc(p.x + offsetX + 6, p.y + offsetY - 5, 2, 0, Math.PI * 2); // right eye
+        ctx.arc(p.x + offsetX - 6, p.y + offsetY - 5, 2, 0, Math.PI * 2);
+        ctx.arc(p.x + offsetX + 6, p.y + offsetY - 5, 2, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(p.x + offsetX, p.y + offsetY + 2, 7, 0, Math.PI); // smile
+        ctx.arc(p.x + offsetX, p.y + offsetY + 2, 7, 0, Math.PI);
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 1.5;
         ctx.stroke();
