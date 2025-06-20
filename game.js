@@ -1,5 +1,8 @@
 // game.js
-
+window.onload = () => {
+  const deathScreen = document.getElementById('deathScreen');
+  deathScreen.style.display = 'none';
+};
 const ARENA_WIDTH = 1600;
 const ARENA_HEIGHT = 1200;
 
