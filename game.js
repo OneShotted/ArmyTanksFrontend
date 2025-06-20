@@ -8,7 +8,7 @@ const usernameInput = document.getElementById('usernameInput');
 const startBtn = document.getElementById('startBtn');
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-
+deathScreen.style.display = 'none';
 let socket;
 let myId = null;
 let username = null;
