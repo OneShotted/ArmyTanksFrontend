@@ -25,6 +25,11 @@ const keys = {
   angle: 0,
 };
 
+let isDead = false;
+
+const deathScreen = document.getElementById('deathScreen');
+const respawnBtn = document.getElementById('respawnBtn');
+
 startBtn.onclick = () => {
   const name = usernameInput.value.trim();
   if (name.length === 0) {
@@ -60,10 +65,30 @@ function connectSocket() {
     delete players[id];
   });
 
+  socket.on('playerUpdated', (player) => {
+    players[player.id] = player;
+  });
+
   socket.on('gameState', (state) => {
     players = state.players;
     bullets = state.bullets;
-    draw();
+
+    const me = players[myId];
+    if (me) {
+      if (me.health <= 0 && !isDead) {
+        // Player just died
+        isDead = true;
+        deathScreen.style.display = 'flex';
+        canvas.style.display = 'none';
+      } else if (me.health > 0 && isDead) {
+        // Player respawned
+        isDead = false;
+        deathScreen.style.display = 'none';
+        canvas.style.display = 'block';
+      }
+    }
+
+    if (!isDead) draw();
   });
 
   setupInputHandlers();
@@ -106,6 +131,11 @@ function setupInputHandlers() {
     sendInput();
   });
 }
+
+respawnBtn.onclick = () => {
+  if (!socket) return;
+  socket.emit('respawn');
+};
 
 function sendInput() {
   if (!socket) return;
@@ -211,5 +241,3 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
-
-
