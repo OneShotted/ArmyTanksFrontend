@@ -124,6 +124,12 @@ canvas.addEventListener('mouseup', e => {
         players[playerId].petals.splice(dragOrigin.index, 1);
     }
 
+    // Emit update to server to sync petals/inventory
+    socket.emit('updatePetalsInventory', {
+        petals: players[playerId].petals,
+        inventory: players[playerId].inventory
+    });
+
     draggedPetal = null;
     dragOrigin = null;
 });
@@ -351,7 +357,21 @@ socket.on('init', data => {
     drops = data.drops;
 });
 
-socket.on('players', data => players = data);
+socket.on('players', data => {
+    // Merge players but keep your local player's petals and inventory to prevent flicker
+    for (const id in data) {
+        if (id === playerId && players[id]) {
+            players[id] = {
+                ...data[id],
+                petals: players[id].petals,
+                inventory: players[id].inventory
+            };
+        } else {
+            players[id] = data[id];
+        }
+    }
+});
+
 socket.on('enemies', data => enemies = data);
 socket.on('drops', data => drops = data);
 
