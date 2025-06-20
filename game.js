@@ -1,5 +1,8 @@
 // game.js
 
+const ARENA_WIDTH = 1600;
+const ARENA_HEIGHT = 1200;
+
 const homeScreen = document.getElementById('homeScreen');
 const usernameInput = document.getElementById('usernameInput');
 const startBtn = document.getElementById('startBtn');
@@ -147,22 +150,37 @@ function drawGrid(offsetX = 0, offsetY = 0) {
   ctx.strokeStyle = '#0f0';
   ctx.lineWidth = 0.5;
 
-  const startX = -offsetX % gridSize;
-  const startY = -offsetY % gridSize;
+  const arenaLeft = -offsetX;
+  const arenaTop = -offsetY;
+  const arenaRight = arenaLeft + ARENA_WIDTH;
+  const arenaBottom = arenaTop + ARENA_HEIGHT;
 
-  for (let x = startX; x < canvas.width; x += gridSize) {
+  let startX = Math.floor(arenaLeft / gridSize) * gridSize;
+  for (let x = startX; x <= arenaRight; x += gridSize) {
+    if (x < arenaLeft || x > arenaRight) continue;
     ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.height);
+    ctx.moveTo(x, arenaTop);
+    ctx.lineTo(x, arenaBottom);
     ctx.stroke();
   }
 
-  for (let y = startY; y < canvas.height; y += gridSize) {
+  let startY = Math.floor(arenaTop / gridSize) * gridSize;
+  for (let y = startY; y <= arenaBottom; y += gridSize) {
+    if (y < arenaTop || y > arenaBottom) continue;
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(canvas.width, y);
+    ctx.moveTo(arenaLeft, y);
+    ctx.lineTo(arenaRight, y);
     ctx.stroke();
   }
+}
+
+function drawBorder(offsetX = 0, offsetY = 0) {
+  ctx.strokeStyle = 'red';
+  ctx.lineWidth = 3;
+
+  const x = -offsetX;
+  const y = -offsetY;
+  ctx.strokeRect(x, y, ARENA_WIDTH, ARENA_HEIGHT);
 }
 
 function draw() {
@@ -175,6 +193,7 @@ function draw() {
   const offsetY = me.y - canvas.height / 2;
 
   drawGrid(offsetX, offsetY);
+  drawBorder(offsetX, offsetY);
 
   for (const id in players) {
     const p = players[id];
@@ -192,4 +211,5 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
+
 
