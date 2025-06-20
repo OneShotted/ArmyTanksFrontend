@@ -66,7 +66,6 @@ function connectSocket() {
   setupInputHandlers();
 }
 
-// Handle input for movement and mouse
 function setupInputHandlers() {
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -74,7 +73,7 @@ function setupInputHandlers() {
     const mouseY = e.clientY - rect.top;
     const player = players[myId];
     if (!player) return;
-    keys.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+    keys.angle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
     sendInput();
   });
 
@@ -105,13 +104,11 @@ function setupInputHandlers() {
   });
 }
 
-// Send input to server
 function sendInput() {
   if (!socket) return;
   socket.emit('input', keys);
 }
 
-// Draw a tank
 function drawTank(x, y, angle, health, isMe, username) {
   ctx.save();
   ctx.translate(x, y);
@@ -138,7 +135,6 @@ function drawTank(x, y, angle, health, isMe, username) {
   ctx.restore();
 }
 
-// Draw a bullet
 function drawBullet(x, y) {
   ctx.beginPath();
   ctx.arc(x, y, 5, 0, Math.PI * 2);
@@ -146,20 +142,22 @@ function drawBullet(x, y) {
   ctx.fill();
 }
 
-// Draw green grid background
-function drawGrid() {
+function drawGrid(offsetX = 0, offsetY = 0) {
   const gridSize = 40;
   ctx.strokeStyle = '#0f0';
   ctx.lineWidth = 0.5;
 
-  for (let x = 0; x < canvas.width; x += gridSize) {
+  const startX = -offsetX % gridSize;
+  const startY = -offsetY % gridSize;
+
+  for (let x = startX; x < canvas.width; x += gridSize) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, canvas.height);
     ctx.stroke();
   }
 
-  for (let y = 0; y < canvas.height; y += gridSize) {
+  for (let y = startY; y < canvas.height; y += gridSize) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(canvas.width, y);
@@ -167,23 +165,27 @@ function drawGrid() {
   }
 }
 
-// Main draw function
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  drawGrid();
+  const me = players[myId];
+  if (!me) return;
+
+  const offsetX = me.x - canvas.width / 2;
+  const offsetY = me.y - canvas.height / 2;
+
+  drawGrid(offsetX, offsetY);
 
   for (const id in players) {
     const p = players[id];
-    drawTank(p.x, p.y, p.angle, p.health, id === myId, p.username);
+    drawTank(p.x - offsetX, p.y - offsetY, p.angle, p.health, id === myId, p.username);
   }
 
   for (const b of bullets) {
-    drawBullet(b.x, b.y);
+    drawBullet(b.x - offsetX, b.y - offsetY);
   }
 }
 
-// Resize canvas when window changes
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
