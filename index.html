@@ -20,12 +20,10 @@
 
   <canvas id="game" style="display:none;"></canvas>
 
-  <div id="deathScreen" class="home-screen" style="display:none; flex-direction: column;">
-    <h1>Oh no! You died!</h1>
-    <button id="respawnBtn">Respawn</button>
-  </div>
-
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  <script src="game.js"></script>
-</body>
-</html>
+  <div id="deathScreen" class="death-screen" style="display:none; 
+    position: fixed; top:0; left:0; right:0; bottom:0; 
+    background: rgba(0,0,0,0.85); 
+    color: white; 
+    font-size: 3rem; 
+    font-weight: bold; 
+    display:
