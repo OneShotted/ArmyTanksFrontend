@@ -149,10 +149,23 @@ function draw() {
         const p = players[id];
         const isMe = id === playerId;
 
+        // Player body
         ctx.fillStyle = isMe ? 'lime' : 'white';
         ctx.beginPath();
         ctx.arc(p.x + offsetX, p.y + offsetY, 20, 0, Math.PI * 2);
         ctx.fill();
+
+        // Eyes and smile (face)
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(p.x + offsetX - 6, p.y + offsetY - 5, 2, 0, Math.PI * 2); // left eye
+        ctx.arc(p.x + offsetX + 6, p.y + offsetY - 5, 2, 0, Math.PI * 2); // right eye
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p.x + offsetX, p.y + offsetY + 2, 7, 0, Math.PI); // smile
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
         if (isMe && p.petals) {
             const time = Date.now() / 500;
@@ -201,10 +214,26 @@ function draw() {
         inventory.forEach((petal, i) => {
             const x = 30 + (i % 5) * 55;
             const y = 70 + Math.floor(i / 5) * 55;
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.arc(x, y, 20, 0, Math.PI * 2);
-            ctx.fill();
+
+            if (petal.type === 'rock') {
+                const size = 20;
+                ctx.fillStyle = 'gray';
+                ctx.beginPath();
+                for (let j = 0; j < 6; j++) {
+                    const angle = Math.PI / 3 * j;
+                    const px = x + Math.cos(angle) * size;
+                    const py = y + Math.sin(angle) * size;
+                    if (j === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(x, y, 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
         });
     }
 
