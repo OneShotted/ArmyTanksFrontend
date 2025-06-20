@@ -20,10 +20,23 @@
 
   <canvas id="game" style="display:none;"></canvas>
 
-  <div id="deathScreen" class="death-screen" style="display:none; 
-    position: fixed; top:0; left:0; right:0; bottom:0; 
-    background: rgba(0,0,0,0.85); 
-    color: white; 
-    font-size: 3rem; 
-    font-weight: bold; 
-    display:
+  <div id="deathScreen" style="display:none;
+    position: fixed; top:0; left:0; right:0; bottom:0;
+    background: rgba(0,0,0,0.85);
+    color: white;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    font-family: Arial, sans-serif;
+    font-size: 2rem;
+    z-index: 1000;">
+    <div>Oh no! You died!</div>
+    <button id="respawnBtn" style="margin-top:20px;
+      padding:10px 20px; font-size:1.5rem; cursor:pointer;">
+      Respawn
+    </button>
+  </div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
