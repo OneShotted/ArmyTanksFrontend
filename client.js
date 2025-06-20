@@ -1,4 +1,5 @@
-const socket = io();
+const socket = io('https://armytanksbackend.onrender.com'); // CHANGE THIS if needed
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -24,11 +25,10 @@ function draw() {
     const me = players[playerId];
     if (!me) return;
 
-    // Center camera on player
     const offsetX = canvas.width / 2 - me.x;
     const offsetY = canvas.height / 2 - me.y;
 
-    // Draw all players
+    // Draw players
     for (const id in players) {
         const p = players[id];
         ctx.fillStyle = id === playerId ? 'lime' : 'white';
@@ -43,7 +43,7 @@ function draw() {
         ctx.fillRect(e.x + offsetX, e.y + offsetY, 30, 30);
     });
 
-    // Draw inventory/hotbar
+    // Draw inventory
     ctx.fillStyle = 'black';
     ctx.fillRect(10, canvas.height - 50, 300, 40);
     ctx.fillStyle = 'white';
@@ -96,4 +96,5 @@ socket.on('enemies', data => {
 });
 
 loop();
+
 
