@@ -8,11 +8,18 @@ window.onload = () => {
 
   const deathScreen = document.getElementById('deathScreen');
   const respawnBtn = document.getElementById('respawnBtn');
+  const infoBtn = document.getElementById('infoBtn');
+  const infoBox = document.getElementById('infoBox');
 
   deathScreen.style.display = 'none';
+  infoBox.style.display = 'none';
 
-  const ARENA_WIDTH = 1600;
-  const ARENA_HEIGHT = 1200;
+  infoBtn.onclick = () => {
+    infoBox.style.display = infoBox.style.display === 'none' ? 'block' : 'none';
+  };
+
+  const ARENA_WIDTH = 3200;
+  const ARENA_HEIGHT = 2400;
 
   let socket;
   let myId = null;
@@ -75,12 +82,6 @@ window.onload = () => {
 
     socket.on('playerUpdated', (player) => {
       players[player.id] = player;
-    });
-
-    socket.on('playerDied', () => {
-      isDead = true;
-      deathScreen.style.display = 'flex';
-      canvas.style.display = 'none';
     });
 
     socket.on('gameState', (state) => {
@@ -147,9 +148,6 @@ window.onload = () => {
   respawnBtn.onclick = () => {
     if (!socket) return;
     socket.emit('respawn');
-    deathScreen.style.display = 'none';
-    canvas.style.display = 'block';
-    isDead = false;
   };
 
   function sendInput() {
