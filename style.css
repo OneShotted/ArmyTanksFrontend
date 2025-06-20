@@ -9,10 +9,15 @@ body {
 }
 
 canvas {
-  border: 2px solid #555;
-  background: #222;
-  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  border: none;
+  background: #111; /* dark background so the green grid pops */
 }
+
 
 /* Home screen styles */
 .home-screen {
