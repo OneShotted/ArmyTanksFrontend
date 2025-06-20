@@ -17,6 +17,11 @@ let dragOrigin = null;
 let mouseX = 0;
 let mouseY = 0;
 
+const bagButton = document.getElementById('bag-button');
+bagButton.addEventListener('click', () => {
+    showInventory = !showInventory;
+});
+
 document.addEventListener('keydown', e => {
     keys[e.key] = true;
     if (e.key === 'i') showInventory = !showInventory;
