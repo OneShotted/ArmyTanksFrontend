@@ -41,6 +41,10 @@ startBtn.onclick = () => {
   homeScreen.style.display = 'none';
   canvas.style.display = 'block';
 
+  // Hide death screen and reset dead state on new game start
+  deathScreen.style.display = 'none';
+  isDead = false;
+
   connectSocket();
 };
 
@@ -241,3 +245,4 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
+
