@@ -1,38 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ArmyTanks.io!</title>
-  <link rel="stylesheet" href="style.css" />
+    <title>Petal.io</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="home-screen">
-    <h1>ArmyTanks.io!</h1>
-    <input type="text" id="username" placeholder="Enter username" />
-    
-    <h2>Select Your Tank</h2>
-    <div class="tank-options">
-      <button class="tank-button" data-type="scout">
-        <div class="tank-icon scout"></div>
-        Scout
-      </button>
-      <button class="tank-button" data-type="sniper">
-        <div class="tank-icon sniper"></div>
-        Sniper
-      </button>
-      <button class="tank-button" data-type="heavy">
-        <div class="tank-icon heavy"></div>
-        Heavy
-      </button>
-    </div>
-
-    <button id="play-button">Play</button>
-  </div>
-
-  <canvas id="gameCanvas" style="display: none;"></canvas>
-
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="game.js"></script>
+    <canvas id="gameCanvas" width="1000" height="1000"></canvas>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
 </body>
 </html>
+
