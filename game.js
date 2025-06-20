@@ -37,8 +37,7 @@ startBtn.onclick = () => {
 };
 
 function connectSocket() {
-  socket = io('https://your-app-name.onrender.com'); // Replace with your Render URL
-
+  socket = io('https://armytanksbackend.onrender.com'); 
   socket.on('connect', () => {
     myId = socket.id;
     socket.emit('setUsername', username);
