@@ -22,9 +22,12 @@ bagButton.addEventListener('click', () => {
     showInventory = !showInventory;
 });
 
+const HOTBAR_SIZE = 5;        // fixed 5 slots
+const HOTBAR_SLOT_SIZE = 50;  // square size
+
 document.addEventListener('keydown', e => {
     keys[e.key] = true;
-    if (e.key === 'i') showInventory = !showInventory;
+    if (e.key === 'z') showInventory = !showInventory;
 });
 document.addEventListener('keyup', e => keys[e.key] = false);
 
@@ -39,6 +42,7 @@ canvas.addEventListener('mousedown', e => {
     mouseX = e.clientX;
     mouseY = e.clientY;
 
+    // Check inventory petals first
     inventory.forEach((petal, i) => {
         const x = 30 + (i % 5) * 55;
         const y = 70 + Math.floor(i / 5) * 55;
@@ -48,12 +52,19 @@ canvas.addEventListener('mousedown', e => {
         }
     });
 
-    const hotbarY = canvas.height - 60;
-    const hotbarX = canvas.width / 2 - petals.length * 50 / 2;
+    // Check hotbar slots (rectangles)
+    const hotbarY = canvas.height - HOTBAR_SLOT_SIZE - 10;
+    const hotbarX = canvas.width / 2 - (HOTBAR_SIZE * HOTBAR_SLOT_SIZE) / 2;
+
     petals.forEach((petal, i) => {
-        const x = hotbarX + i * 50 + 25;
-        const y = hotbarY + 25;
-        if (Math.hypot(mouseX - x, mouseY - y) < 20) {
+        const slotX = hotbarX + i * HOTBAR_SLOT_SIZE;
+        const slotY = hotbarY;
+        if (
+            mouseX >= slotX &&
+            mouseX <= slotX + HOTBAR_SLOT_SIZE &&
+            mouseY >= slotY &&
+            mouseY <= slotY + HOTBAR_SLOT_SIZE
+        ) {
             draggedPetal = petal;
             dragOrigin = { from: 'hotbar', index: i };
         }
@@ -61,6 +72,7 @@ canvas.addEventListener('mousedown', e => {
 
     if (e.button === 0) isAttacking = true;
 });
+
 canvas.addEventListener('mouseup', e => {
     if (e.button === 0) isAttacking = false;
 
@@ -71,30 +83,42 @@ canvas.addEventListener('mouseup', e => {
     mouseX = e.clientX;
     mouseY = e.clientY;
 
-    const hotbarY = canvas.height - 60;
-    const hotbarX = canvas.width / 2 - petals.length * 50 / 2;
+    const hotbarY = canvas.height - HOTBAR_SLOT_SIZE - 10;
+    const hotbarX = canvas.width / 2 - (HOTBAR_SIZE * HOTBAR_SLOT_SIZE) / 2;
 
     let dropped = false;
 
-    petals.forEach((slotPetal, i) => {
-        const x = hotbarX + i * 50 + 25;
-        const y = hotbarY + 25;
-        if (Math.hypot(mouseX - x, mouseY - y) < 20) {
+    // Try dropping on hotbar slots
+    for (let i = 0; i < HOTBAR_SIZE; i++) {
+        const slotX = hotbarX + i * HOTBAR_SLOT_SIZE;
+        const slotY = hotbarY;
+
+        if (
+            mouseX >= slotX &&
+            mouseX <= slotX + HOTBAR_SLOT_SIZE &&
+            mouseY >= slotY &&
+            mouseY <= slotY + HOTBAR_SLOT_SIZE
+        ) {
             if (dragOrigin.from === 'inventory') {
-                // Fixed: swap inventory petal with hotbar petal
+                // Remove from inventory
                 players[playerId].inventory.splice(dragOrigin.index, 1);
+                // Swap with petal in hotbar slot if exists
                 const replaced = players[playerId].petals[i];
                 if (replaced) players[playerId].inventory.push(replaced);
+                // Set dragged petal in hotbar slot
                 players[playerId].petals[i] = draggedPetal;
             } else if (dragOrigin.from === 'hotbar') {
+                // Swap petals between slots
                 const temp = players[playerId].petals[i];
                 players[playerId].petals[i] = draggedPetal;
                 players[playerId].petals[dragOrigin.index] = temp;
             }
             dropped = true;
+            break;
         }
-    });
+    }
 
+    // If dropped outside hotbar and dragging from hotbar, move petal back to inventory
     if (!dropped && dragOrigin.from === 'hotbar') {
         players[playerId].inventory.push(draggedPetal);
         players[playerId].petals.splice(dragOrigin.index, 1);
@@ -120,6 +144,7 @@ function draw() {
     const offsetX = canvas.width / 2 - me.x;
     const offsetY = canvas.height / 2 - me.y;
 
+    // Draw enemies
     enemies.forEach(e => {
         ctx.fillStyle = 'red';
         ctx.fillRect(e.x + offsetX, e.y + offsetY, 30, 30);
@@ -127,6 +152,7 @@ function draw() {
         ctx.fillText(`HP: ${e.hp}`, e.x + offsetX, e.y + offsetY - 5);
     });
 
+    // Draw drops
     drops.forEach(d => {
         const type = d.petal?.type || 'basic';
         if (type === 'rock') {
@@ -152,6 +178,7 @@ function draw() {
         }
     });
 
+    // Draw players
     for (const id in players) {
         const p = players[id];
         const isMe = id === playerId;
@@ -162,14 +189,14 @@ function draw() {
         ctx.arc(p.x + offsetX, p.y + offsetY, 20, 0, Math.PI * 2);
         ctx.fill();
 
-        // Eyes and smile (face)
+        // Face (eyes + smile)
         ctx.fillStyle = 'black';
         ctx.beginPath();
-        ctx.arc(p.x + offsetX - 6, p.y + offsetY - 5, 2, 0, Math.PI * 2);
-        ctx.arc(p.x + offsetX + 6, p.y + offsetY - 5, 2, 0, Math.PI * 2);
+        ctx.arc(p.x + offsetX - 6, p.y + offsetY - 5, 2, 0, Math.PI * 2); // left eye
+        ctx.arc(p.x + offsetX + 6, p.y + offsetY - 5, 2, 0, Math.PI * 2); // right eye
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(p.x + offsetX, p.y + offsetY + 2, 7, 0, Math.PI);
+        ctx.arc(p.x + offsetX, p.y + offsetY + 2, 7, 0, Math.PI); // smile
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 1.5;
         ctx.stroke();
@@ -200,17 +227,44 @@ function draw() {
         }
     }
 
-    const hotbar = players[playerId]?.petals || [];
-    const hotbarWidth = hotbar.length * 50;
-    const hotbarX = canvas.width / 2 - hotbarWidth / 2;
-    const hotbarY = canvas.height - 60;
-    hotbar.forEach((petal, i) => {
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(hotbarX + i * 50 + 25, hotbarY + 25, 20, 0, Math.PI * 2);
-        ctx.fill();
+    // Draw hotbar background squares
+    const hotbarY = canvas.height - HOTBAR_SLOT_SIZE - 10;
+    const hotbarX = canvas.width / 2 - (HOTBAR_SIZE * HOTBAR_SLOT_SIZE) / 2;
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    for (let i = 0; i < HOTBAR_SIZE; i++) {
+        ctx.fillRect(hotbarX + i * HOTBAR_SLOT_SIZE, hotbarY, HOTBAR_SLOT_SIZE - 5, HOTBAR_SLOT_SIZE - 5);
+    }
+
+    // Draw petals inside hotbar squares
+    const hotbarPetals = players[playerId]?.petals || [];
+    hotbarPetals.forEach((petal, i) => {
+        if (!petal) return;
+        const x = hotbarX + i * HOTBAR_SLOT_SIZE + HOTBAR_SLOT_SIZE / 2;
+        const y = hotbarY + HOTBAR_SLOT_SIZE / 2;
+
+        // Draw petal shape depending on type
+        if (petal.type === 'rock') {
+            const size = 15;
+            ctx.fillStyle = 'gray';
+            ctx.beginPath();
+            for (let j = 0; j < 6; j++) {
+                const angle = Math.PI / 3 * j;
+                const px = x + Math.cos(angle) * size;
+                const py = y + Math.sin(angle) * size;
+                if (j === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, Math.PI * 2);
+            ctx.fill();
+        }
     });
 
+    // Draw inventory panel
     if (showInventory) {
         ctx.fillStyle = 'rgba(0,0,0,0.8)';
         ctx.fillRect(20, 20, 300, 300);
@@ -244,11 +298,30 @@ function draw() {
         });
     }
 
+    // Draw dragged petal following mouse
     if (draggedPetal) {
-        ctx.fillStyle = 'yellow';
-        ctx.beginPath();
-        ctx.arc(mouseX, mouseY, 20, 0, Math.PI * 2);
-        ctx.fill();
+        const x = mouseX;
+        const y = mouseY;
+
+        if (draggedPetal.type === 'rock') {
+            const size = 20;
+            ctx.fillStyle = 'yellow';
+            ctx.beginPath();
+            for (let j = 0; j < 6; j++) {
+                const angle = Math.PI / 3 * j;
+                const px = x + Math.cos(angle) * size;
+                const py = y + Math.sin(angle) * size;
+                if (j === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.fillStyle = 'yellow';
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 }
 
@@ -283,5 +356,3 @@ socket.on('enemies', data => enemies = data);
 socket.on('drops', data => drops = data);
 
 loop();
-
-
