@@ -1,28 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Plorra.io</title>
-    <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mini BlockTanks.io</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
+  <canvas id="game" width="800" height="600"></canvas>
 
-    <!-- Bag icon button to toggle inventory -->
-    <button id="bag-button" style="
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        width: 40px;
-        height: 40px;
-        background: url('https://cdn-icons-png.flaticon.com/512/891/891462.png') no-repeat center center;
-        background-size: contain;
-        border: none;
-        cursor: pointer;
-        outline: none;
-        z-index: 1000;
-    "></button>
-
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="client.js"></script>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>
