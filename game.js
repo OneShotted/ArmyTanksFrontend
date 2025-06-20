@@ -37,7 +37,8 @@ startBtn.onclick = () => {
 };
 
 function connectSocket() {
-  socket = io('https://armytanksbackend.onrender.com'); 
+  socket = io('https://armytanksbackend.onrender.com'); // your backend URL
+
   socket.on('connect', () => {
     myId = socket.id;
     socket.emit('setUsername', username);
@@ -65,6 +66,7 @@ function connectSocket() {
   setupInputHandlers();
 }
 
+// Handle input for movement and mouse
 function setupInputHandlers() {
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -103,11 +105,13 @@ function setupInputHandlers() {
   });
 }
 
+// Send input to server
 function sendInput() {
   if (!socket) return;
   socket.emit('input', keys);
 }
 
+// Draw a tank
 function drawTank(x, y, angle, health, isMe, username) {
   ctx.save();
   ctx.translate(x, y);
@@ -134,6 +138,7 @@ function drawTank(x, y, angle, health, isMe, username) {
   ctx.restore();
 }
 
+// Draw a bullet
 function drawBullet(x, y) {
   ctx.beginPath();
   ctx.arc(x, y, 5, 0, Math.PI * 2);
@@ -141,8 +146,32 @@ function drawBullet(x, y) {
   ctx.fill();
 }
 
+// Draw green grid background
+function drawGrid() {
+  const gridSize = 40;
+  ctx.strokeStyle = '#0f0';
+  ctx.lineWidth = 0.5;
+
+  for (let x = 0; x < canvas.width; x += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+
+  for (let y = 0; y < canvas.height; y += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+}
+
+// Main draw function
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawGrid();
 
   for (const id in players) {
     const p = players[id];
@@ -153,3 +182,12 @@ function draw() {
     drawBullet(b.x, b.y);
   }
 }
+
+// Resize canvas when window changes
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
