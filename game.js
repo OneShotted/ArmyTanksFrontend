@@ -3,7 +3,8 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-const socket = io('http://localhost:3000'); // Change if deployed
+const socket = io('wss://armytanksbackend.onrender.com');
+
 
 let players = {};
 let bullets = [];
