@@ -2,13 +2,13 @@ window.onload = () => {
   const homeScreen = document.getElementById('homeScreen');
   const usernameInput = document.getElementById('usernameInput');
   const startBtn = document.getElementById('startBtn');
+  const tankTypeSelect = document.getElementById('tankTypeSelect');
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
 
   const deathScreen = document.getElementById('deathScreen');
   const respawnBtn = document.getElementById('respawnBtn');
 
-  // Hide death screen immediately on page load
   deathScreen.style.display = 'none';
 
   const ARENA_WIDTH = 1600;
@@ -40,21 +40,24 @@ window.onload = () => {
     }
     username = name;
 
+    const tankType = tankTypeSelect.value;
+
     homeScreen.style.display = 'none';
     canvas.style.display = 'block';
 
     deathScreen.style.display = 'none';
     isDead = false;
 
-    connectSocket();
+    connectSocket(tankType);
   };
 
-  function connectSocket() {
-    socket = io('https://armytanksbackend.onrender.com'); // your backend URL
+  function connectSocket(tankType) {
+    socket = io('https://armytanksbackend.onrender.com');
 
     socket.on('connect', () => {
       myId = socket.id;
       socket.emit('setUsername', username);
+      socket.emit('setTankType', tankType);
     });
 
     socket.on('init', (data) => {
@@ -81,12 +84,10 @@ window.onload = () => {
       const me = players[myId];
       if (me) {
         if (me.health <= 0 && !isDead) {
-          console.log('Player died: showing death screen');
           isDead = true;
           deathScreen.style.display = 'flex';
           canvas.style.display = 'none';
         } else if (me.health > 0 && isDead) {
-          console.log('Player respawned: hiding death screen');
           isDead = false;
           deathScreen.style.display = 'none';
           canvas.style.display = 'block';
@@ -147,24 +148,40 @@ window.onload = () => {
     socket.emit('input', keys);
   }
 
-  function drawTank(x, y, angle, health, isMe, username) {
+  function drawTank(x, y, angle, health, isMe, username, tankType) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-    ctx.fillStyle = isMe ? 'lime' : 'red';
 
-    ctx.fillRect(-15, -10, 30, 20);
+    if (tankType === 'sniper') {
+      ctx.fillStyle = isMe ? '#0f0' : '#f00';
+      ctx.fillRect(-15, -8, 30, 16);
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(0, -3, 25, 6);
+    } else if (tankType === 'minigun') {
+      ctx.fillStyle = isMe ? '#00f' : '#800';
+      ctx.fillRect(-15, -10, 30, 20);
+      ctx.fillStyle = 'silver';
+      ctx.fillRect(0, -5, 15, 10);
+    } else if (tankType === 'shotgun') {
+      ctx.fillStyle = isMe ? '#ff0' : '#880';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 20, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(0, -6, 18, 12);
+    } else {
+      ctx.fillStyle = isMe ? 'lime' : 'red';
+      ctx.fillRect(-15, -10, 30, 20);
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(0, -5, 20, 10);
+    }
 
-    ctx.fillStyle = 'gray';
-    ctx.fillRect(0, -5, 20, 10);
-
-    // Health bar
     ctx.fillStyle = 'black';
     ctx.fillRect(-20, -20, 40, 5);
     ctx.fillStyle = 'lime';
     ctx.fillRect(-20, -20, 40 * (health / 100), 5);
 
-    // Username text above tank
     ctx.fillStyle = 'white';
     ctx.font = '12px Arial';
     ctx.textAlign = 'center';
@@ -173,9 +190,9 @@ window.onload = () => {
     ctx.restore();
   }
 
-  function drawBullet(x, y) {
+  function drawBullet(x, y, radius = 5) {
     ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fillStyle = 'yellow';
     ctx.fill();
   }
@@ -232,11 +249,11 @@ window.onload = () => {
 
     for (const id in players) {
       const p = players[id];
-      drawTank(p.x - offsetX, p.y - offsetY, p.angle, p.health, id === myId, p.username);
+      drawTank(p.x - offsetX, p.y - offsetY, p.angle, p.health, id === myId, p.username, p.tankType);
     }
 
     for (const b of bullets) {
-      drawBullet(b.x - offsetX, b.y - offsetY);
+      drawBullet(b.x - offsetX, b.y - offsetY, b.radius || 5);
     }
   }
 
@@ -247,5 +264,3 @@ window.onload = () => {
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 };
-
-
