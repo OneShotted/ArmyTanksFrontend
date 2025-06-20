@@ -1,13 +1,14 @@
-body {
+/* Global reset and layout */
+html, body {
   margin: 0;
-  background: #222;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
   font-family: Arial, sans-serif;
+  background: #222;
 }
 
+/* Canvas: full screen game area */
 canvas {
   position: absolute;
   top: 0;
@@ -15,9 +16,8 @@ canvas {
   width: 100vw;
   height: 100vh;
   border: none;
-  background: #111; /* dark background so the green grid pops */
+  background: #111;
 }
-
 
 /* Home screen styles */
 .home-screen {
@@ -55,3 +55,4 @@ canvas {
 .home-screen button:hover {
   background: #55aa33;
 }
+
