@@ -77,6 +77,12 @@ window.onload = () => {
       players[player.id] = player;
     });
 
+    socket.on('playerDied', () => {
+      isDead = true;
+      deathScreen.style.display = 'flex';
+      canvas.style.display = 'none';
+    });
+
     socket.on('gameState', (state) => {
       players = state.players;
       bullets = state.bullets;
@@ -141,6 +147,9 @@ window.onload = () => {
   respawnBtn.onclick = () => {
     if (!socket) return;
     socket.emit('respawn');
+    deathScreen.style.display = 'none';
+    canvas.style.display = 'block';
+    isDead = false;
   };
 
   function sendInput() {
