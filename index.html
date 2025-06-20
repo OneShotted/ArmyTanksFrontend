@@ -10,14 +10,21 @@
   <div id="homeScreen" class="home-screen">
     <h1>Welcome to ArmyTanks.io!</h1>
     <input id="usernameInput" placeholder="Enter your username" maxlength="15" />
-    <select id="tankTypeSelect">
-      <option value="sniper">Sniper</option>
-      <option value="minigun">Minigun</option>
-      <option value="shotgun">Shotgun</option>
-    </select>
+   <select id="tankTypeSelect">
+        <option value="sniper">Sniper</option>
+        <option value="minigun">Minigun</option>
+        <option value="shotgun">Shotgun</option>
+      </select>
+      <button id="infoBtn" style="margin-left: 10px;">i</button>
+    </div>
+    <div id="infoBox">
+      <strong>Tank Types:</strong><br>
+      <b>Sniper</b>: Long range, extremely fast bullets.<br>
+      <b>Minigun</b>: Rapid fire, low bullet speed, short range.<br>
+      <b>Shotgun</b>: Big bullet, double damage, slow fire rate.
+    </div>
     <button id="startBtn">Start Game</button>
   </div>
-
   <canvas id="game" style="display:none;"></canvas>
 
   <div id="deathScreen" style="display:none;
