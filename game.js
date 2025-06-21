@@ -11,12 +11,34 @@ window.onload = () => {
   const infoBtn = document.getElementById('infoBtn');
   const infoBox = document.getElementById('infoBox');
 
-  // CHAT ELEMENTS
-  const chatContainer = document.getElementById('chatContainer');
-  const chatBox = document.getElementById('chatBox');
-  const chatInput = document.getElementById('chatInput');
+  const chatContainer = document.createElement('div');
+  chatContainer.style.position = 'fixed';
+  chatContainer.style.bottom = '0';
+  chatContainer.style.left = '10px';
+  chatContainer.style.width = '300px';
+  chatContainer.style.maxHeight = '200px';
+  chatContainer.style.overflowY = 'auto';
+  chatContainer.style.background = 'rgba(0,0,0,0.5)';
+  chatContainer.style.color = 'white';
+  chatContainer.style.fontSize = '14px';
+  chatContainer.style.padding = '8px';
+  chatContainer.style.display = 'none';
+  chatContainer.style.borderRadius = '8px';
+  document.body.appendChild(chatContainer);
+
+  const chatInput = document.createElement('input');
+  chatInput.type = 'text';
+  chatInput.placeholder = 'Type a message...';
+  chatInput.style.width = '100%';
+  chatInput.style.padding = '6px';
+  chatInput.style.border = 'none';
+  chatInput.style.outline = 'none';
+  chatInput.style.display = 'none';
+  chatInput.style.marginTop = '5px';
+  chatInput.style.borderRadius = '4px';
+  document.body.appendChild(chatInput);
+
   let chatVisible = false;
-  let chatFocused = false;
 
   deathScreen.style.display = 'none';
   infoBox.style.display = 'none';
@@ -115,13 +137,11 @@ window.onload = () => {
       if (!isDead) draw();
     });
 
-    // --- CHAT LISTENERS ---
-    socket.on('chatMessage', (data) => {
-      addChatMessage(data);
-    });
-
-    socket.on('playerDied', () => {
-      // Optional: show death message in chat or UI
+    socket.on('chatMessage', (msg) => {
+      const div = document.createElement('div');
+      div.textContent = `${msg.username}: ${msg.text}`;
+      chatContainer.appendChild(div);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
     });
 
     setupInputHandlers();
@@ -129,7 +149,6 @@ window.onload = () => {
 
   function setupInputHandlers() {
     canvas.addEventListener('mousemove', (e) => {
-      if (chatFocused) return; // Don't update angle while chatting
       const rect = canvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
@@ -139,44 +158,40 @@ window.onload = () => {
     });
 
     canvas.addEventListener('mousedown', () => {
-      if (chatFocused) return;
       keys.shooting = true;
     });
 
     canvas.addEventListener('mouseup', () => {
-      if (chatFocused) return;
       keys.shooting = false;
     });
 
     window.addEventListener('keydown', (e) => {
-      // TOGGLE CHAT on Enter (only if input not focused)
-      if (e.key === 'Enter') {
-        if (chatFocused) {
-          // Send message
-          const msg = chatInput.value.trim();
-          if (msg.length > 0 && socket) {
-            socket.emit('chatMessage', msg);
-            chatInput.value = '';
-          }
-          toggleChat(false);
-        } else {
-          toggleChat(true);
-        }
-        e.preventDefault();
-        return;
-      }
-
-      if (chatFocused) return; // no game controls when chatting
+      if (chatInput === document.activeElement && e.key !== 'Enter') return;
 
       if (e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
       if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
       if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
       if (e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
+
+      if (e.key === 'Enter') {
+        if (chatInput.style.display === 'none') {
+          chatVisible = true;
+          chatInput.style.display = 'block';
+          chatContainer.style.display = 'block';
+          chatInput.focus();
+        } else {
+          const message = chatInput.value.trim();
+          if (message.length > 0 && socket) {
+            socket.emit('chatMessage', message);
+            chatInput.value = '';
+          }
+          chatInput.blur();
+          chatInput.style.display = 'none';
+        }
+      }
     });
 
     window.addEventListener('keyup', (e) => {
-      if (chatFocused) return; // no game controls when chatting
-
       if (e.key === 'w' || e.key === 'ArrowUp') keys.up = false;
       if (e.key === 's' || e.key === 'ArrowDown') keys.down = false;
       if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
@@ -194,28 +209,8 @@ window.onload = () => {
     });
   }
 
-  function toggleChat(show) {
-    chatVisible = show;
-    chatInput.style.display = show ? 'block' : 'none';
-    if (show) {
-      chatInput.focus();
-      chatFocused = true;
-    } else {
-      chatInput.blur();
-      chatFocused = false;
-    }
-  }
-
-  function addChatMessage(data) {
-    const el = document.createElement('div');
-    el.textContent = `${data.sender}: ${data.text}`;
-    chatBox.appendChild(el);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }
-
-  // 🔁 Smooth continuous input loop
   function gameLoop() {
-    if (!isDead && socket && !chatFocused) {
+    if (!isDead && socket) {
       sendInput();
     }
     requestAnimationFrame(gameLoop);
@@ -356,3 +351,4 @@ window.onload = () => {
 
   resizeCanvas();
 };
+
