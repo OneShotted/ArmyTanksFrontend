@@ -166,6 +166,155 @@ window.onload = () => {
       if (e.key === 'w' || e.key === 'ArrowUp') keys.up = false;
       if (e.key === 's' || e.key === 'ArrowDown') keys.down = false;
       if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
-      if (e.key === 'd' || e.key === 'ArrowRight
+      if (e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
+    });
 
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        currentZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
+      } else {
+        currentZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
+      }
+      draw();
+    });
+
+    respawnBtn.onclick = () => {
+      if (!socket) return;
+      socket.emit('respawn');
+    };
+  }
+
+  function gameLoop() {
+    if (!isDead && socket) {
+      socket.emit('input', keys);
+    }
+    requestAnimationFrame(gameLoop);
+  }
+
+  function drawTank(x, y, angle, health, isMe, username, tankType) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+
+    if (tankType === 'sniper') {
+      ctx.fillStyle = isMe ? '#0f0' : '#f00';
+      ctx.fillRect(-15, -8, 30, 16);
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(0, -3, 25, 6);
+    } else if (tankType === 'minigun') {
+      ctx.fillStyle = isMe ? '#00f' : '#800';
+      ctx.fillRect(-15, -10, 30, 20);
+      ctx.fillStyle = 'silver';
+      ctx.fillRect(0, -5, 15, 10);
+    } else if (tankType === 'shotgun') {
+      ctx.fillStyle = isMe ? '#ff0' : '#880';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 20, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(0, -6, 18, 12);
+    } else {
+      ctx.fillStyle = isMe ? 'lime' : 'red';
+      ctx.fillRect(-15, -10, 30, 20);
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(0, -5, 20, 10);
+    }
+
+    ctx.fillStyle = 'black';
+    ctx.fillRect(-20, -20, 40, 5);
+    ctx.fillStyle = 'lime';
+    ctx.fillRect(-20, -20, 40 * (health / 100), 5);
+
+    ctx.fillStyle = 'white';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(username || 'Anonymous', 0, -25);
+
+    ctx.restore();
+  }
+
+  function drawBullet(x, y, radius = 5) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = 'yellow';
+    ctx.fill();
+  }
+
+  function drawGrid() {
+    const gridSize = 40;
+    ctx.strokeStyle = '#0f0';
+    ctx.lineWidth = 0.5 / currentZoom;
+
+    for (let x = 0; x <= 3200; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, 2400);
+      ctx.stroke();
+    }
+
+    for (let y = 0; y <= 2400; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(3200, y);
+      ctx.stroke();
+    }
+  }
+
+  function drawBorder() {
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 3 / currentZoom;
+    ctx.strokeRect(0, 0, 3200, 2400);
+  }
+
+  function drawWalls() {
+    ctx.fillStyle = 'gray';
+    for (const w of walls) {
+      ctx.fillRect(w.x, w.y, w.width, w.height);
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const me = players[myId];
+    if (!me) return;
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const offsetX = me.x * currentZoom - centerX;
+    const offsetY = me.y * currentZoom - centerY;
+
+    ctx.save();
+    ctx.scale(currentZoom, currentZoom);
+    ctx.translate(-offsetX / currentZoom, -offsetY / currentZoom);
+
+    drawGrid();
+    drawBorder();
+    drawWalls();
+
+    for (const id in players) {
+      const p = players[id];
+      drawTank(p.x, p.y, p.angle, p.health, id === myId, p.username, p.tankType);
+    }
+
+    for (const b of bullets) {
+      drawBullet(b.x, b.y, b.radius || 5);
+    }
+
+    ctx.restore();
+  }
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    draw();
+  });
+
+  resizeCanvas();
+};
 
