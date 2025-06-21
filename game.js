@@ -27,7 +27,7 @@ window.onload = () => {
 
   let players = {};
   let bullets = [];
-  let walls = []; // <- populated from server
+  let walls = [];
 
   const keys = {
     up: false,
@@ -58,6 +58,7 @@ window.onload = () => {
     deathScreen.style.display = 'none';
     isDead = false;
     connectSocket(tankType);
+    gameLoop(); // Start smooth input loop
   };
 
   function connectSocket(tankType) {
@@ -89,7 +90,7 @@ window.onload = () => {
     socket.on('gameState', (state) => {
       players = state.players;
       bullets = state.bullets;
-      walls = state.walls; // <- receive walls from server
+      walls = state.walls;
 
       const me = players[myId];
       if (me) {
@@ -118,17 +119,14 @@ window.onload = () => {
       const player = players[myId];
       if (!player) return;
       keys.angle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
-      sendInput();
     });
 
     canvas.addEventListener('mousedown', () => {
       keys.shooting = true;
-      sendInput();
     });
 
     canvas.addEventListener('mouseup', () => {
       keys.shooting = false;
-      sendInput();
     });
 
     window.addEventListener('keydown', (e) => {
@@ -136,7 +134,6 @@ window.onload = () => {
       if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
       if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
       if (e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
-      sendInput();
     });
 
     window.addEventListener('keyup', (e) => {
@@ -144,7 +141,6 @@ window.onload = () => {
       if (e.key === 's' || e.key === 'ArrowDown') keys.down = false;
       if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
       if (e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
-      sendInput();
     });
 
     canvas.addEventListener('wheel', (e) => {
@@ -156,6 +152,14 @@ window.onload = () => {
       }
       draw();
     });
+  }
+
+  // 🔁 Smooth continuous input loop
+  function gameLoop() {
+    if (!isDead && socket) {
+      sendInput();
+    }
+    requestAnimationFrame(gameLoop);
   }
 
   respawnBtn.onclick = () => {
@@ -285,9 +289,11 @@ window.onload = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
   }
+
   window.addEventListener('resize', () => {
     resizeCanvas();
     draw();
   });
+
   resizeCanvas();
 };
