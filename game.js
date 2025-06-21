@@ -2,7 +2,7 @@ window.onload = () => {
   const homeScreen = document.getElementById('homeScreen');
   const usernameInput = document.getElementById('usernameInput');
   const startBtn = document.getElementById('startBtn');
-  const tankTypeSelect = document.getElementById('tankTypeSelect');
+  const tankTypeSelect = document.getElementById('tankDropdown');
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
 
