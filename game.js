@@ -11,6 +11,13 @@ window.onload = () => {
   const infoBtn = document.getElementById('infoBtn');
   const infoBox = document.getElementById('infoBox');
 
+  // CHAT ELEMENTS
+  const chatContainer = document.getElementById('chatContainer');
+  const chatBox = document.getElementById('chatBox');
+  const chatInput = document.getElementById('chatInput');
+  let chatVisible = false;
+  let chatFocused = false;
+
   deathScreen.style.display = 'none';
   infoBox.style.display = 'none';
 
@@ -108,11 +115,21 @@ window.onload = () => {
       if (!isDead) draw();
     });
 
+    // --- CHAT LISTENERS ---
+    socket.on('chatMessage', (data) => {
+      addChatMessage(data);
+    });
+
+    socket.on('playerDied', () => {
+      // Optional: show death message in chat or UI
+    });
+
     setupInputHandlers();
   }
 
   function setupInputHandlers() {
     canvas.addEventListener('mousemove', (e) => {
+      if (chatFocused) return; // Don't update angle while chatting
       const rect = canvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
@@ -122,14 +139,35 @@ window.onload = () => {
     });
 
     canvas.addEventListener('mousedown', () => {
+      if (chatFocused) return;
       keys.shooting = true;
     });
 
     canvas.addEventListener('mouseup', () => {
+      if (chatFocused) return;
       keys.shooting = false;
     });
 
     window.addEventListener('keydown', (e) => {
+      // TOGGLE CHAT on Enter (only if input not focused)
+      if (e.key === 'Enter') {
+        if (chatFocused) {
+          // Send message
+          const msg = chatInput.value.trim();
+          if (msg.length > 0 && socket) {
+            socket.emit('chatMessage', msg);
+            chatInput.value = '';
+          }
+          toggleChat(false);
+        } else {
+          toggleChat(true);
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (chatFocused) return; // no game controls when chatting
+
       if (e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
       if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
       if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
@@ -137,6 +175,8 @@ window.onload = () => {
     });
 
     window.addEventListener('keyup', (e) => {
+      if (chatFocused) return; // no game controls when chatting
+
       if (e.key === 'w' || e.key === 'ArrowUp') keys.up = false;
       if (e.key === 's' || e.key === 'ArrowDown') keys.down = false;
       if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
@@ -154,9 +194,28 @@ window.onload = () => {
     });
   }
 
+  function toggleChat(show) {
+    chatVisible = show;
+    chatInput.style.display = show ? 'block' : 'none';
+    if (show) {
+      chatInput.focus();
+      chatFocused = true;
+    } else {
+      chatInput.blur();
+      chatFocused = false;
+    }
+  }
+
+  function addChatMessage(data) {
+    const el = document.createElement('div');
+    el.textContent = `${data.sender}: ${data.text}`;
+    chatBox.appendChild(el);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
   // 🔁 Smooth continuous input loop
   function gameLoop() {
-    if (!isDead && socket) {
+    if (!isDead && socket && !chatFocused) {
       sendInput();
     }
     requestAnimationFrame(gameLoop);
