@@ -20,7 +20,6 @@ window.onload = () => {
 
   const ARENA_WIDTH = 3200;
   const ARENA_HEIGHT = 2400;
-  const TANK_RADIUS = 20;
 
   let socket;
   let myId = null;
@@ -28,7 +27,6 @@ window.onload = () => {
 
   let players = {};
   let bullets = [];
-  let walls = [];
 
   const keys = {
     up: false,
@@ -42,9 +40,10 @@ window.onload = () => {
   let isDead = false;
 
   // Zoom variables
-  let zoomLevel = 1;
+  let currentZoom = 1;
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 2;
+  const ZOOM_STEP = 0.1;
 
   startBtn.onclick = () => {
     const name = usernameInput.value.trim();
@@ -77,7 +76,6 @@ window.onload = () => {
     socket.on('init', (data) => {
       players = data.players;
       bullets = data.bullets;
-      walls = data.walls || [];
     });
 
     socket.on('newPlayer', (player) => {
@@ -95,7 +93,6 @@ window.onload = () => {
     socket.on('gameState', (state) => {
       players = state.players;
       bullets = state.bullets;
-      walls = state.walls || [];
 
       const me = players[myId];
       if (me) {
@@ -123,6 +120,7 @@ window.onload = () => {
       const mouseY = e.clientY - rect.top;
       const player = players[myId];
       if (!player) return;
+      // Calculate angle relative to center of canvas (player always centered)
       keys.angle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
       sendInput();
     });
@@ -153,16 +151,16 @@ window.onload = () => {
       sendInput();
     });
 
-    // Zoom with mouse wheel
+    // Zoom control with mouse wheel
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const zoomSpeed = 0.1;
       if (e.deltaY < 0) {
-        zoomLevel += zoomSpeed;
+        // Zoom in
+        currentZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
       } else {
-        zoomLevel -= zoomSpeed;
+        // Zoom out
+        currentZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
       }
-      zoomLevel = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomLevel));
       draw();
     });
   }
@@ -206,11 +204,13 @@ window.onload = () => {
       ctx.fillRect(0, -5, 20, 10);
     }
 
+    // Health bar
     ctx.fillStyle = 'black';
     ctx.fillRect(-20, -20, 40, 5);
     ctx.fillStyle = 'lime';
     ctx.fillRect(-20, -20, 40 * (health / 100), 5);
 
+    // Username text
     ctx.fillStyle = 'white';
     ctx.font = '12px Arial';
     ctx.textAlign = 'center';
@@ -226,80 +226,75 @@ window.onload = () => {
     ctx.fill();
   }
 
-  function drawWall(wall, offsetX, offsetY) {
-    ctx.fillStyle = '#654321'; // Brownish wall color
-    ctx.fillRect(wall.x - offsetX, wall.y - offsetY, wall.width, wall.height);
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(wall.x - offsetX, wall.y - offsetY, wall.width, wall.height);
-  }
-
-  function drawGrid(offsetX = 0, offsetY = 0) {
+  // Draw grid with zoom-friendly line width and no offset params (absolute coords)
+  function drawGrid() {
     const gridSize = 40;
     ctx.strokeStyle = '#0f0';
-    ctx.lineWidth = 0.5;
+    ctx.lineWidth = 0.5 / currentZoom;
 
-    const arenaLeft = -offsetX;
-    const arenaTop = -offsetY;
-    const arenaRight = arenaLeft + ARENA_WIDTH;
-    const arenaBottom = arenaTop + ARENA_HEIGHT;
-
-    let startX = Math.floor(arenaLeft / gridSize) * gridSize;
-    for (let x = startX; x <= arenaRight; x += gridSize) {
+    for (let x = 0; x <= ARENA_WIDTH; x += gridSize) {
       ctx.beginPath();
-      ctx.moveTo((x - offsetX) * zoomLevel, (arenaTop - offsetY) * zoomLevel);
-      ctx.lineTo((x - offsetX) * zoomLevel, (arenaBottom - offsetY) * zoomLevel);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, ARENA_HEIGHT);
       ctx.stroke();
     }
 
-    let startY = Math.floor(arenaTop / gridSize) * gridSize;
-    for (let y = startY; y <= arenaBottom; y += gridSize) {
+    for (let y = 0; y <= ARENA_HEIGHT; y += gridSize) {
       ctx.beginPath();
-      ctx.moveTo((arenaLeft - offsetX) * zoomLevel, (y - offsetY) * zoomLevel);
-      ctx.lineTo((arenaRight - offsetX) * zoomLevel, (y - offsetY) * zoomLevel);
+      ctx.moveTo(0, y);
+      ctx.lineTo(ARENA_WIDTH, y);
       ctx.stroke();
     }
   }
 
-  function drawBorder(offsetX = 0, offsetY = 0) {
+  // Draw arena border without offset
+  function drawBorder() {
     ctx.strokeStyle = 'red';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(
-      (0 - offsetX) * zoomLevel,
-      (0 - offsetY) * zoomLevel,
-      ARENA_WIDTH * zoomLevel,
-      ARENA_HEIGHT * zoomLevel
-    );
+    ctx.lineWidth = 3 / currentZoom;
+    ctx.strokeRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
   }
 
+  // Draw walls array: example walls structure [{x, y, width, height}, ...]
+  let walls = []; // populate this from server or hardcoded
+
+  function drawWalls() {
+    ctx.fillStyle = 'gray';
+    for (const w of walls) {
+      ctx.fillRect(w.x, w.y, w.width, w.height);
+    }
+  }
+
+  // Main draw function with zoom and player-centered camera
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const me = players[myId];
     if (!me) return;
 
-    // Center camera on player with zoom
-    const offsetX = me.x - (canvas.width / 2) / zoomLevel;
-    const offsetY = me.y - (canvas.height / 2) / zoomLevel;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    // Calculate offset for camera with zoom applied
+    const offsetX = me.x * currentZoom - centerX;
+    const offsetY = me.y * currentZoom - centerY;
 
     ctx.save();
-    ctx.scale(zoomLevel, zoomLevel);
 
-    drawGrid(offsetX, offsetY);
-    drawBorder(offsetX, offsetY);
+    ctx.scale(currentZoom, currentZoom);
+    ctx.translate(-offsetX / currentZoom, -offsetY / currentZoom);
 
-    // Draw walls
-    for (const wall of walls) {
-      drawWall(wall, offsetX, offsetY);
-    }
+    // Draw the world: grid, border, walls, players, bullets
+    drawGrid();
+    drawBorder();
+    drawWalls();
 
     for (const id in players) {
       const p = players[id];
-      drawTank(p.x - offsetX, p.y - offsetY, p.angle, p.health, id === myId, p.username, p.tankType);
+      drawTank(p.x, p.y, p.angle, p.health, id === myId, p.username, p.tankType);
     }
 
     for (const b of bullets) {
-      drawBullet(b.x - offsetX, b.y - offsetY, b.radius || 5);
+      drawBullet(b.x, b.y, b.radius || 5);
     }
 
     ctx.restore();
@@ -309,7 +304,11 @@ window.onload = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
   }
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    draw();
+  });
   resizeCanvas();
 };
+
 
