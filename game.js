@@ -12,33 +12,36 @@ window.onload = () => {
   const infoBox = document.getElementById('infoBox');
 
   const chatContainer = document.createElement('div');
-  chatContainer.style.position = 'fixed';
-  chatContainer.style.bottom = '0';
+  const chatLog = document.createElement('div');
+  const chatInput = document.createElement('input');
+  let chatVisible = false;
+
+  chatContainer.id = 'chatContainer';
+  chatLog.id = 'chatLog';
+  chatInput.id = 'chatInput';
+
+  chatContainer.style.position = 'absolute';
+  chatContainer.style.bottom = '10px';
   chatContainer.style.left = '10px';
   chatContainer.style.width = '300px';
   chatContainer.style.maxHeight = '200px';
   chatContainer.style.overflowY = 'auto';
-  chatContainer.style.background = 'rgba(0,0,0,0.5)';
-  chatContainer.style.color = 'white';
-  chatContainer.style.fontSize = '14px';
-  chatContainer.style.padding = '8px';
-  chatContainer.style.display = 'none';
+  chatContainer.style.background = 'rgba(0, 0, 0, 0.5)';
+  chatContainer.style.padding = '10px';
   chatContainer.style.borderRadius = '8px';
-  document.body.appendChild(chatContainer);
+  chatContainer.style.color = 'white';
+  chatContainer.style.display = 'none';
+  chatContainer.style.zIndex = '100';
 
-  const chatInput = document.createElement('input');
-  chatInput.type = 'text';
-  chatInput.placeholder = 'Type a message...';
   chatInput.style.width = '100%';
+  chatInput.style.marginTop = '5px';
   chatInput.style.padding = '6px';
   chatInput.style.border = 'none';
-  chatInput.style.outline = 'none';
-  chatInput.style.display = 'none';
-  chatInput.style.marginTop = '5px';
   chatInput.style.borderRadius = '4px';
-  document.body.appendChild(chatInput);
 
-  let chatVisible = false;
+  chatContainer.appendChild(chatLog);
+  chatContainer.appendChild(chatInput);
+  document.body.appendChild(chatContainer);
 
   deathScreen.style.display = 'none';
   infoBox.style.display = 'none';
@@ -87,7 +90,7 @@ window.onload = () => {
     deathScreen.style.display = 'none';
     isDead = false;
     connectSocket(tankType);
-    gameLoop(); // Start smooth input loop
+    gameLoop();
   };
 
   function connectSocket(tankType) {
@@ -137,11 +140,11 @@ window.onload = () => {
       if (!isDead) draw();
     });
 
-    socket.on('chatMessage', (msg) => {
-      const div = document.createElement('div');
-      div.textContent = `${msg.username}: ${msg.text}`;
-      chatContainer.appendChild(div);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+    socket.on('chatMessage', ({ username, message }) => {
+      const msg = document.createElement('div');
+      msg.textContent = `${username}: ${message}`;
+      chatLog.appendChild(msg);
+      chatLog.scrollTop = chatLog.scrollHeight;
     });
 
     setupInputHandlers();
@@ -166,14 +169,8 @@ window.onload = () => {
     });
 
     window.addEventListener('keydown', (e) => {
-      if (chatInput === document.activeElement && e.key !== 'Enter') return;
-
-      if (e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
-      if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
-      if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
-      if (e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
-
       if (e.key === 'Enter') {
+        e.preventDefault();
         if (chatInput.style.display === 'none') {
           chatVisible = true;
           chatInput.style.display = 'block';
@@ -188,7 +185,15 @@ window.onload = () => {
           chatInput.blur();
           chatInput.style.display = 'none';
         }
+        return;
       }
+
+      if (chatInput === document.activeElement) return;
+
+      if (e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
+      if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
+      if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
+      if (e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
     });
 
     window.addEventListener('keyup', (e) => {
@@ -231,29 +236,10 @@ window.onload = () => {
     ctx.translate(x, y);
     ctx.rotate(angle);
 
-    if (tankType === 'sniper') {
-      ctx.fillStyle = isMe ? '#0f0' : '#f00';
-      ctx.fillRect(-15, -8, 30, 16);
-      ctx.fillStyle = 'gray';
-      ctx.fillRect(0, -3, 25, 6);
-    } else if (tankType === 'minigun') {
-      ctx.fillStyle = isMe ? '#00f' : '#800';
-      ctx.fillRect(-15, -10, 30, 20);
-      ctx.fillStyle = 'silver';
-      ctx.fillRect(0, -5, 15, 10);
-    } else if (tankType === 'shotgun') {
-      ctx.fillStyle = isMe ? '#ff0' : '#880';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 20, 15, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'gray';
-      ctx.fillRect(0, -6, 18, 12);
-    } else {
-      ctx.fillStyle = isMe ? 'lime' : 'red';
-      ctx.fillRect(-15, -10, 30, 20);
-      ctx.fillStyle = 'gray';
-      ctx.fillRect(0, -5, 20, 10);
-    }
+    ctx.fillStyle = isMe ? 'lime' : 'red';
+    ctx.fillRect(-15, -10, 30, 20);
+    ctx.fillStyle = 'gray';
+    ctx.fillRect(0, -5, 20, 10);
 
     ctx.fillStyle = 'black';
     ctx.fillRect(-20, -20, 40, 5);
