@@ -19,13 +19,7 @@ window.onload = () => {
     angle: 0,
   };
 
-  let isDead = false;
-  let currentZoom = 1;
-  const MIN_ZOOM = 0.5;
-  const MAX_ZOOM = 2;
-  const ZOOM_STEP = 0.1;
-
-  // UI elements
+  // UI Elements
   const homeScreen = document.getElementById('homeScreen');
   const usernameInput = document.getElementById('usernameInput');
   const startBtn = document.getElementById('startBtn');
@@ -34,12 +28,13 @@ window.onload = () => {
   const respawnBtn = document.getElementById('respawnBtn');
   const infoBtn = document.getElementById('infoBtn');
   const infoBox = document.getElementById('infoBox');
-
   const chatBox = document.getElementById('chatBox');
   const chatInput = document.getElementById('chatInput');
-  let chatVisible = false;
 
-  // Setup UI display
+  let chatVisible = false;
+  let isDead = false;
+
+  // Initial UI setup
   deathScreen.style.display = 'none';
   infoBox.style.display = 'none';
   canvas.style.display = 'none';
@@ -50,8 +45,8 @@ window.onload = () => {
 
   startBtn.onclick = () => {
     const name = usernameInput.value.trim();
-    if (name.length === 0) {
-      alert('Please enter a username.');
+    if (!name) {
+      alert('Enter a username');
       return;
     }
     username = name;
@@ -71,14 +66,6 @@ window.onload = () => {
       myId = socket.id;
       socket.emit('setUsername', username);
       socket.emit('setTankType', tankType);
-    });
-
-    socket.on('playerDisconnected', (id) => {
-      delete players[id];
-    });
-
-    socket.on('playerUpdated', (player) => {
-      players[player.id] = player;
     });
 
     socket.on('gameState', (state) => {
@@ -102,13 +89,15 @@ window.onload = () => {
       if (!isDead) draw();
     });
 
+    socket.on('playerDisconnected', (id) => {
+      delete players[id];
+    });
+
     socket.on('chatMessage', ({ username, message }) => {
       const p = document.createElement('p');
       p.innerText = `${username}: ${message}`;
       chatBox.appendChild(p);
-      if (chatBox.children.length > 30) {
-        chatBox.removeChild(chatBox.children[0]);
-      }
+      if (chatBox.children.length > 30) chatBox.removeChild(chatBox.children[0]);
       chatBox.scrollTop = chatBox.scrollHeight;
     });
 
@@ -136,10 +125,10 @@ window.onload = () => {
     window.addEventListener('keydown', (e) => {
       if (chatVisible && document.activeElement === chatInput) return;
 
-      if (e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
-      if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
-      if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
-      if (e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
+      if (['w', 'ArrowUp'].includes(e.key)) keys.up = true;
+      if (['s', 'ArrowDown'].includes(e.key)) keys.down = true;
+      if (['a', 'ArrowLeft'].includes(e.key)) keys.left = true;
+      if (['d', 'ArrowRight'].includes(e.key)) keys.right = true;
 
       // Chat toggle
       if (e.key === 'Enter') {
@@ -163,20 +152,10 @@ window.onload = () => {
     window.addEventListener('keyup', (e) => {
       if (chatVisible && document.activeElement === chatInput) return;
 
-      if (e.key === 'w' || e.key === 'ArrowUp') keys.up = false;
-      if (e.key === 's' || e.key === 'ArrowDown') keys.down = false;
-      if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
-      if (e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
-    });
-
-    canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      if (e.deltaY < 0) {
-        currentZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
-      } else {
-        currentZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
-      }
-      draw();
+      if (['w', 'ArrowUp'].includes(e.key)) keys.up = false;
+      if (['s', 'ArrowDown'].includes(e.key)) keys.down = false;
+      if (['a', 'ArrowLeft'].includes(e.key)) keys.left = false;
+      if (['d', 'ArrowRight'].includes(e.key)) keys.right = false;
     });
 
     respawnBtn.onclick = () => {
@@ -192,11 +171,46 @@ window.onload = () => {
     requestAnimationFrame(gameLoop);
   }
 
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const me = players[myId];
+    if (!me) return;
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const offsetX = me.x - centerX;
+    const offsetY = me.y - centerY;
+
+    ctx.save();
+    ctx.translate(centerX - me.x, centerY - me.y);
+
+    // Draw grid
+    drawGrid();
+
+    // Draw walls
+    drawWalls();
+
+    // Draw players
+    for (const id in players) {
+      const p = players[id];
+      drawTank(p.x, p.y, p.angle, p.health, id === myId, p.username, p.tankType);
+    }
+
+    // Draw bullets
+    for (const b of bullets) {
+      drawBullet(b.x, b.y, b.radius || 5);
+    }
+
+    ctx.restore();
+  }
+
   function drawTank(x, y, angle, health, isMe, username, tankType) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
 
+    // Draw tank shape/colors by tankType (same as before)
     if (tankType === 'sniper') {
       ctx.fillStyle = isMe ? '#0f0' : '#f00';
       ctx.fillRect(-15, -8, 30, 16);
@@ -221,11 +235,13 @@ window.onload = () => {
       ctx.fillRect(0, -5, 20, 10);
     }
 
+    // Health bar
     ctx.fillStyle = 'black';
     ctx.fillRect(-20, -20, 40, 5);
     ctx.fillStyle = 'lime';
     ctx.fillRect(-20, -20, 40 * (health / 100), 5);
 
+    // Username
     ctx.fillStyle = 'white';
     ctx.font = '12px Arial';
     ctx.textAlign = 'center';
@@ -244,7 +260,7 @@ window.onload = () => {
   function drawGrid() {
     const gridSize = 40;
     ctx.strokeStyle = '#0f0';
-    ctx.lineWidth = 0.5 / currentZoom;
+    ctx.lineWidth = 0.5;
 
     for (let x = 0; x <= 3200; x += gridSize) {
       ctx.beginPath();
@@ -261,48 +277,11 @@ window.onload = () => {
     }
   }
 
-  function drawBorder() {
-    ctx.strokeStyle = 'red';
-    ctx.lineWidth = 3 / currentZoom;
-    ctx.strokeRect(0, 0, 3200, 2400);
-  }
-
   function drawWalls() {
     ctx.fillStyle = 'gray';
     for (const w of walls) {
       ctx.fillRect(w.x, w.y, w.width, w.height);
     }
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const me = players[myId];
-    if (!me) return;
-
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const offsetX = me.x * currentZoom - centerX;
-    const offsetY = me.y * currentZoom - centerY;
-
-    ctx.save();
-    ctx.scale(currentZoom, currentZoom);
-    ctx.translate(-offsetX / currentZoom, -offsetY / currentZoom);
-
-    drawGrid();
-    drawBorder();
-    drawWalls();
-
-    for (const id in players) {
-      const p = players[id];
-      drawTank(p.x, p.y, p.angle, p.health, id === myId, p.username, p.tankType);
-    }
-
-    for (const b of bullets) {
-      drawBullet(b.x, b.y, b.radius || 5);
-    }
-
-    ctx.restore();
   }
 
   function resizeCanvas() {
