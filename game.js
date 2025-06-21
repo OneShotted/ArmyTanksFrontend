@@ -21,29 +21,6 @@ window.onload = () => {
   const ARENA_WIDTH = 3200;
   const ARENA_HEIGHT = 2400;
 
-  // Walls around spawn with 4 entrances
-  const walls = [
-    // Top wall segments (left, gap, right)
-    { x: 1400, y: 1150, width: 140, height: 20 },
-    { x: 1600, y: 1150, width: 40, height: 20 }, // entrance gap here (between 1540 - 1600)
-    { x: 1640, y: 1150, width: 140, height: 20 },
-
-    // Bottom wall segments (left, gap, right)
-    { x: 1400, y: 1330, width: 140, height: 20 },
-    { x: 1600, y: 1330, width: 40, height: 20 }, // entrance gap here
-    { x: 1640, y: 1330, width: 140, height: 20 },
-
-    // Left wall segments (top, gap, bottom)
-    { x: 1400, y: 1150, width: 20, height: 80 },
-    { x: 1400, y: 1170, width: 20, height: 40 }, // entrance gap here (between 1190 - 1230)
-    { x: 1400, y: 1210, width: 20, height: 80 },
-
-    // Right wall segments (top, gap, bottom)
-    { x: 1780, y: 1150, width: 20, height: 80 },
-    { x: 1780, y: 1170, width: 20, height: 40 }, // entrance gap here
-    { x: 1780, y: 1210, width: 20, height: 80 },
-  ];
-
   let socket;
   let myId = null;
   let username = null;
@@ -62,28 +39,11 @@ window.onload = () => {
 
   let isDead = false;
 
-  // Zoom settings
+  // Zoom variables
   let currentZoom = 1;
-  const zoomStep = 0.1;
-  const minZoom = 0.5;
-  const maxZoom = 2;
-
-  // Zoom controls
-  window.addEventListener('wheel', (e) => {
-    if (!players[myId]) return;
-    const oldZoom = currentZoom;
-    if (e.deltaY < 0) {
-      currentZoom += zoomStep;
-    } else {
-      currentZoom -= zoomStep;
-    }
-    currentZoom = Math.min(maxZoom, Math.max(minZoom, currentZoom));
-
-    // Optional: prevent page scroll when zooming on canvas
-    if (Math.abs(currentZoom - oldZoom) > 0.0001) {
-      e.preventDefault();
-    }
-  }, { passive: false });
+  const MIN_ZOOM = 0.5;
+  const MAX_ZOOM = 2;
+  const ZOOM_STEP = 0.1;
 
   startBtn.onclick = () => {
     const name = usernameInput.value.trim();
@@ -160,6 +120,7 @@ window.onload = () => {
       const mouseY = e.clientY - rect.top;
       const player = players[myId];
       if (!player) return;
+      // Calculate angle relative to center of canvas (player always centered)
       keys.angle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
       sendInput();
     });
@@ -188,6 +149,19 @@ window.onload = () => {
       if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
       if (e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
       sendInput();
+    });
+
+    // Zoom control with mouse wheel
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        // Zoom in
+        currentZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
+      } else {
+        // Zoom out
+        currentZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
+      }
+      draw();
     });
   }
 
@@ -230,11 +204,13 @@ window.onload = () => {
       ctx.fillRect(0, -5, 20, 10);
     }
 
+    // Health bar
     ctx.fillStyle = 'black';
     ctx.fillRect(-20, -20, 40, 5);
     ctx.fillStyle = 'lime';
     ctx.fillRect(-20, -20, 40 * (health / 100), 5);
 
+    // Username text
     ctx.fillStyle = 'white';
     ctx.font = '12px Arial';
     ctx.textAlign = 'center';
@@ -250,83 +226,87 @@ window.onload = () => {
     ctx.fill();
   }
 
-  function drawGrid(offsetX = 0, offsetY = 0) {
+  // Draw grid with zoom-friendly line width and no offset params (absolute coords)
+  function drawGrid() {
     const gridSize = 40;
     ctx.strokeStyle = '#0f0';
-    ctx.lineWidth = 0.5 / currentZoom; // scale grid line width with zoom
+    ctx.lineWidth = 0.5 / currentZoom;
 
-    const arenaLeft = -offsetX;
-    const arenaTop = -offsetY;
-    const arenaRight = arenaLeft + ARENA_WIDTH;
-    const arenaBottom = arenaTop + ARENA_HEIGHT;
-
-    let startX = Math.floor(arenaLeft / gridSize) * gridSize;
-    for (let x = startX; x <= arenaRight; x += gridSize) {
+    for (let x = 0; x <= ARENA_WIDTH; x += gridSize) {
       ctx.beginPath();
-      ctx.moveTo((x + offsetX) * currentZoom, (arenaTop + offsetY) * currentZoom);
-      ctx.lineTo((x + offsetX) * currentZoom, (arenaBottom + offsetY) * currentZoom);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, ARENA_HEIGHT);
       ctx.stroke();
     }
 
-    let startY = Math.floor(arenaTop / gridSize) * gridSize;
-    for (let y = startY; y <= arenaBottom; y += gridSize) {
+    for (let y = 0; y <= ARENA_HEIGHT; y += gridSize) {
       ctx.beginPath();
-      ctx.moveTo((arenaLeft + offsetX) * currentZoom, (y + offsetY) * currentZoom);
-      ctx.lineTo((arenaRight + offsetX) * currentZoom, (y + offsetY) * currentZoom);
+      ctx.moveTo(0, y);
+      ctx.lineTo(ARENA_WIDTH, y);
       ctx.stroke();
     }
   }
 
-  function drawBorder(offsetX = 0, offsetY = 0) {
+  // Draw arena border without offset
+  function drawBorder() {
     ctx.strokeStyle = 'red';
-    ctx.lineWidth = 3 / currentZoom; // scale border width with zoom
-    const x = -offsetX;
-    const y = -offsetY;
-    ctx.strokeRect(x * currentZoom, y * currentZoom, ARENA_WIDTH * currentZoom, ARENA_HEIGHT * currentZoom);
+    ctx.lineWidth = 3 / currentZoom;
+    ctx.strokeRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
   }
+
+  // Draw walls array: example walls structure [{x, y, width, height}, ...]
+  let walls = []; // populate this from server or hardcoded
 
   function drawWalls() {
-    ctx.fillStyle = '#555'; // dark fill color
-    ctx.strokeStyle = '#222'; // dark stroke color
-    ctx.lineWidth = 3 / currentZoom; // scale line width with zoom
-
+    ctx.fillStyle = 'gray';
     for (const w of walls) {
-      ctx.fillRect(w.x * currentZoom, w.y * currentZoom, w.width * currentZoom, w.height * currentZoom);
-      ctx.strokeRect(w.x * currentZoom, w.y * currentZoom, w.width * currentZoom, w.height * currentZoom);
+      ctx.fillRect(w.x, w.y, w.width, w.height);
     }
   }
 
+  // Main draw function with zoom and player-centered camera
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const me = players[myId];
     if (!me) return;
 
-    // Calculate offsets so player is always centered, then scale everything by zoom
-    const offsetX = me.x - canvas.width / (2 * currentZoom);
-    const offsetY = me.y - canvas.height / (2 * currentZoom);
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
 
-    drawGrid(offsetX, offsetY);
-    drawBorder(offsetX, offsetY);
+    // Calculate offset for camera with zoom applied
+    const offsetX = me.x * currentZoom - centerX;
+    const offsetY = me.y * currentZoom - centerY;
+
+    ctx.save();
+
+    ctx.scale(currentZoom, currentZoom);
+    ctx.translate(-offsetX / currentZoom, -offsetY / currentZoom);
+
+    // Draw the world: grid, border, walls, players, bullets
+    drawGrid();
+    drawBorder();
     drawWalls();
 
     for (const id in players) {
       const p = players[id];
-      const drawX = (p.x - offsetX) * currentZoom;
-      const drawY = (p.y - offsetY) * currentZoom;
-      drawTank(drawX, drawY, p.angle, p.health, id === myId, p.username, p.tankType);
+      drawTank(p.x, p.y, p.angle, p.health, id === myId, p.username, p.tankType);
     }
 
     for (const b of bullets) {
-      drawBullet((b.x - offsetX) * currentZoom, (b.y - offsetY) * currentZoom, (b.radius || 5) * currentZoom);
+      drawBullet(b.x, b.y, b.radius || 5);
     }
+
+    ctx.restore();
   }
 
   function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
   }
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    draw();
+  });
   resizeCanvas();
 };
-
