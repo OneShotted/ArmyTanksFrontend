@@ -109,13 +109,18 @@ window.onload = () => {
     });
 
     socket.on('chatMessage', ({ username, message }) => {
-      const p = document.createElement('p');
-      p.innerText = `${username}: ${message}`;
-      chatBox.insertBefore(p, chatInput);
-      if (chatBox.children.length > 30) {
-        chatBox.removeChild(chatBox.children[0]);
-      }
-    });
+  const p = document.createElement('p');
+  p.innerText = `${username}: ${message}`;
+  chatBox.insertBefore(p, chatInput);
+
+  // Keep only the last 30 messages
+  if (chatBox.children.length > 30) {
+    chatBox.removeChild(chatBox.children[0]);
+  }
+
+  // 👇 Automatically scroll to the bottom
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
 
     setupInputHandlers();
   }
