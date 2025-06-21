@@ -209,26 +209,21 @@ window.onload = () => {
     ctx.strokeStyle = '#0f0';
     ctx.lineWidth = 0.5;
 
-    const arenaLeft = -offsetX;
-    const arenaTop = -offsetY;
-    const arenaRight = arenaLeft + ARENA_WIDTH;
-    const arenaBottom = arenaTop + ARENA_HEIGHT;
+    // Calculate offset remainder to keep grid steady
+    const offsetXMod = offsetX % gridSize;
+    const offsetYMod = offsetY % gridSize;
 
-    let startX = Math.floor(arenaLeft / gridSize) * gridSize;
-    for (let x = startX; x <= arenaRight; x += gridSize) {
-      if (x < arenaLeft || x > arenaRight) continue;
+    for (let x = -offsetXMod; x <= canvas.width; x += gridSize) {
       ctx.beginPath();
-      ctx.moveTo(x, arenaTop);
-      ctx.lineTo(x, arenaBottom);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
       ctx.stroke();
     }
 
-    let startY = Math.floor(arenaTop / gridSize) * gridSize;
-    for (let y = startY; y <= arenaBottom; y += gridSize) {
-      if (y < arenaTop || y > arenaBottom) continue;
+    for (let y = -offsetYMod; y <= canvas.height; y += gridSize) {
       ctx.beginPath();
-      ctx.moveTo(arenaLeft, y);
-      ctx.lineTo(arenaRight, y);
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
       ctx.stroke();
     }
   }
@@ -271,4 +266,3 @@ window.onload = () => {
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 };
-
