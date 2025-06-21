@@ -11,38 +11,6 @@ window.onload = () => {
   const infoBtn = document.getElementById('infoBtn');
   const infoBox = document.getElementById('infoBox');
 
-  const chatContainer = document.createElement('div');
-  const chatLog = document.createElement('div');
-  const chatInput = document.createElement('input');
-  let chatVisible = false;
-
-  chatContainer.id = 'chatContainer';
-  chatLog.id = 'chatLog';
-  chatInput.id = 'chatInput';
-
-  chatContainer.style.position = 'absolute';
-  chatContainer.style.bottom = '10px';
-  chatContainer.style.left = '10px';
-  chatContainer.style.width = '300px';
-  chatContainer.style.maxHeight = '200px';
-  chatContainer.style.overflowY = 'auto';
-  chatContainer.style.background = 'rgba(0, 0, 0, 0.5)';
-  chatContainer.style.padding = '10px';
-  chatContainer.style.borderRadius = '8px';
-  chatContainer.style.color = 'white';
-  chatContainer.style.display = 'none';
-  chatContainer.style.zIndex = '100';
-
-  chatInput.style.width = '100%';
-  chatInput.style.marginTop = '5px';
-  chatInput.style.padding = '6px';
-  chatInput.style.border = 'none';
-  chatInput.style.borderRadius = '4px';
-
-  chatContainer.appendChild(chatLog);
-  chatContainer.appendChild(chatInput);
-  document.body.appendChild(chatContainer);
-
   deathScreen.style.display = 'none';
   infoBox.style.display = 'none';
 
@@ -141,10 +109,12 @@ window.onload = () => {
     });
 
     socket.on('chatMessage', ({ username, message }) => {
-      const msg = document.createElement('div');
-      msg.textContent = `${username}: ${message}`;
-      chatLog.appendChild(msg);
-      chatLog.scrollTop = chatLog.scrollHeight;
+      const p = document.createElement('p');
+      p.innerText = `${username}: ${message}`;
+      chatBox.insertBefore(p, chatInput);
+      if (chatBox.children.length > 30) {
+        chatBox.removeChild(chatBox.children[0]);
+      }
     });
 
     setupInputHandlers();
@@ -169,26 +139,7 @@ window.onload = () => {
     });
 
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (chatInput.style.display === 'none') {
-          chatVisible = true;
-          chatInput.style.display = 'block';
-          chatContainer.style.display = 'block';
-          chatInput.focus();
-        } else {
-          const message = chatInput.value.trim();
-          if (message.length > 0 && socket) {
-            socket.emit('chatMessage', message);
-            chatInput.value = '';
-          }
-          chatInput.blur();
-          chatInput.style.display = 'none';
-        }
-        return;
-      }
-
-      if (chatInput === document.activeElement) return;
+      if (chatVisible && document.activeElement === chatInput) return;
 
       if (e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
       if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
@@ -197,6 +148,8 @@ window.onload = () => {
     });
 
     window.addEventListener('keyup', (e) => {
+      if (chatVisible && document.activeElement === chatInput) return;
+
       if (e.key === 'w' || e.key === 'ArrowUp') keys.up = false;
       if (e.key === 's' || e.key === 'ArrowDown') keys.down = false;
       if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
@@ -211,6 +164,27 @@ window.onload = () => {
         currentZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
       }
       draw();
+    });
+
+    // CHAT BOX
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        if (!chatVisible) {
+          chatBox.style.display = 'block';
+          chatInput.focus();
+          chatVisible = true;
+          e.preventDefault();
+        } else {
+          const msg = chatInput.value.trim();
+          if (msg.length > 0) {
+            socket.emit('chatMessage', { username, message: msg });
+          }
+          chatInput.value = '';
+          chatBox.style.display = 'none';
+          chatVisible = false;
+          e.preventDefault();
+        }
+      }
     });
   }
 
@@ -236,10 +210,29 @@ window.onload = () => {
     ctx.translate(x, y);
     ctx.rotate(angle);
 
-    ctx.fillStyle = isMe ? 'lime' : 'red';
-    ctx.fillRect(-15, -10, 30, 20);
-    ctx.fillStyle = 'gray';
-    ctx.fillRect(0, -5, 20, 10);
+    if (tankType === 'sniper') {
+      ctx.fillStyle = isMe ? '#0f0' : '#f00';
+      ctx.fillRect(-15, -8, 30, 16);
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(0, -3, 25, 6);
+    } else if (tankType === 'minigun') {
+      ctx.fillStyle = isMe ? '#00f' : '#800';
+      ctx.fillRect(-15, -10, 30, 20);
+      ctx.fillStyle = 'silver';
+      ctx.fillRect(0, -5, 15, 10);
+    } else if (tankType === 'shotgun') {
+      ctx.fillStyle = isMe ? '#ff0' : '#880';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 20, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(0, -6, 18, 12);
+    } else {
+      ctx.fillStyle = isMe ? 'lime' : 'red';
+      ctx.fillRect(-15, -10, 30, 20);
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(0, -5, 20, 10);
+    }
 
     ctx.fillStyle = 'black';
     ctx.fillRect(-20, -20, 40, 5);
@@ -336,5 +329,36 @@ window.onload = () => {
   });
 
   resizeCanvas();
+
+  // Chat box setup
+  const chatBox = document.createElement('div');
+  chatBox.id = 'chatBox';
+  chatBox.style.position = 'fixed';
+  chatBox.style.bottom = '10px';
+  chatBox.style.left = '10px';
+  chatBox.style.width = '300px';
+  chatBox.style.maxHeight = '200px';
+  chatBox.style.overflowY = 'auto';
+  chatBox.style.backgroundColor = 'rgba(0,0,0,0.7)';
+  chatBox.style.color = 'white';
+  chatBox.style.fontSize = '14px';
+  chatBox.style.padding = '8px';
+  chatBox.style.borderRadius = '6px';
+  chatBox.style.display = 'none';
+  document.body.appendChild(chatBox);
+
+  const chatInput = document.createElement('input');
+  chatInput.type = 'text';
+  chatInput.placeholder = 'Type a message...';
+  chatInput.style.width = '100%';
+  chatInput.style.padding = '6px';
+  chatInput.style.marginTop = '5px';
+  chatInput.style.borderRadius = '4px';
+  chatInput.style.border = 'none';
+  chatInput.style.outline = 'none';
+  chatBox.appendChild(chatInput);
+
+  let chatVisible = false;
 };
+
 
