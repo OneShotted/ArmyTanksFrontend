@@ -27,6 +27,7 @@ window.onload = () => {
 
   let players = {};
   let bullets = [];
+  let walls = []; // <- populated from server
 
   const keys = {
     up: false,
@@ -39,7 +40,6 @@ window.onload = () => {
 
   let isDead = false;
 
-  // Zoom variables
   let currentZoom = 1;
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 2;
@@ -52,15 +52,11 @@ window.onload = () => {
       return;
     }
     username = name;
-
     const tankType = tankTypeSelect.value;
-
     homeScreen.style.display = 'none';
     canvas.style.display = 'block';
-
     deathScreen.style.display = 'none';
     isDead = false;
-
     connectSocket(tankType);
   };
 
@@ -93,6 +89,7 @@ window.onload = () => {
     socket.on('gameState', (state) => {
       players = state.players;
       bullets = state.bullets;
+      walls = state.walls; // <- receive walls from server
 
       const me = players[myId];
       if (me) {
@@ -120,7 +117,6 @@ window.onload = () => {
       const mouseY = e.clientY - rect.top;
       const player = players[myId];
       if (!player) return;
-      // Calculate angle relative to center of canvas (player always centered)
       keys.angle = Math.atan2(mouseY - canvas.height / 2, mouseX - canvas.width / 2);
       sendInput();
     });
@@ -151,14 +147,11 @@ window.onload = () => {
       sendInput();
     });
 
-    // Zoom control with mouse wheel
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       if (e.deltaY < 0) {
-        // Zoom in
         currentZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
       } else {
-        // Zoom out
         currentZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
       }
       draw();
@@ -204,13 +197,11 @@ window.onload = () => {
       ctx.fillRect(0, -5, 20, 10);
     }
 
-    // Health bar
     ctx.fillStyle = 'black';
     ctx.fillRect(-20, -20, 40, 5);
     ctx.fillStyle = 'lime';
     ctx.fillRect(-20, -20, 40 * (health / 100), 5);
 
-    // Username text
     ctx.fillStyle = 'white';
     ctx.font = '12px Arial';
     ctx.textAlign = 'center';
@@ -226,7 +217,6 @@ window.onload = () => {
     ctx.fill();
   }
 
-  // Draw grid with zoom-friendly line width and no offset params (absolute coords)
   function drawGrid() {
     const gridSize = 40;
     ctx.strokeStyle = '#0f0';
@@ -247,15 +237,11 @@ window.onload = () => {
     }
   }
 
-  // Draw arena border without offset
   function drawBorder() {
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 3 / currentZoom;
     ctx.strokeRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
   }
-
-  // Draw walls array: example walls structure [{x, y, width, height}, ...]
-  let walls = []; // populate this from server or hardcoded
 
   function drawWalls() {
     ctx.fillStyle = 'gray';
@@ -264,7 +250,6 @@ window.onload = () => {
     }
   }
 
-  // Main draw function with zoom and player-centered camera
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -273,17 +258,13 @@ window.onload = () => {
 
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-
-    // Calculate offset for camera with zoom applied
     const offsetX = me.x * currentZoom - centerX;
     const offsetY = me.y * currentZoom - centerY;
 
     ctx.save();
-
     ctx.scale(currentZoom, currentZoom);
     ctx.translate(-offsetX / currentZoom, -offsetY / currentZoom);
 
-    // Draw the world: grid, border, walls, players, bullets
     drawGrid();
     drawBorder();
     drawWalls();
