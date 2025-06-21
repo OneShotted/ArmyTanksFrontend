@@ -11,8 +11,14 @@ window.onload = () => {
   const infoBtn = document.getElementById('infoBtn');
   const infoBox = document.getElementById('infoBox');
 
+  // Use existing chat elements from HTML
+  const chatBox = document.getElementById('chatBox');
+  const chatInput = document.getElementById('chatInput');
+
   deathScreen.style.display = 'none';
   infoBox.style.display = 'none';
+  chatInput.style.display = 'none';  // hide chat input initially
+  chatBox.style.display = 'block';   // keep chat messages visible
 
   infoBtn.onclick = () => {
     infoBox.style.display = infoBox.style.display === 'none' ? 'block' : 'none';
@@ -44,34 +50,6 @@ window.onload = () => {
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 2;
   const ZOOM_STEP = 0.1;
-
-  // Chat box setup moved here so accessible for socket handlers
-  const chatBox = document.createElement('div');
-  chatBox.id = 'chatBox';
-  chatBox.style.position = 'fixed';
-  chatBox.style.bottom = '10px';
-  chatBox.style.left = '10px';
-  chatBox.style.width = '300px';
-  chatBox.style.maxHeight = '200px';
-  chatBox.style.overflowY = 'auto';
-  chatBox.style.backgroundColor = 'rgba(0,0,0,0.7)';
-  chatBox.style.color = 'white';
-  chatBox.style.fontSize = '14px';
-  chatBox.style.padding = '8px';
-  chatBox.style.borderRadius = '6px';
-  chatBox.style.display = 'none';
-  document.body.appendChild(chatBox);
-
-  const chatInput = document.createElement('input');
-  chatInput.type = 'text';
-  chatInput.placeholder = 'Type a message...';
-  chatInput.style.width = '100%';
-  chatInput.style.padding = '6px';
-  chatInput.style.marginTop = '5px';
-  chatInput.style.borderRadius = '4px';
-  chatInput.style.border = 'none';
-  chatInput.style.outline = 'none';
-  chatBox.appendChild(chatInput);
 
   let chatVisible = false;
 
@@ -138,18 +116,17 @@ window.onload = () => {
       if (!isDead) draw();
     });
 
-    // Chat message handler
     socket.on('chatMessage', ({ username, message }) => {
       const p = document.createElement('p');
       p.innerText = `${username}: ${message}`;
-      chatBox.insertBefore(p, chatInput);
+      chatBox.appendChild(p);
 
       // Keep only the last 30 messages
-      if (chatBox.children.length > 30) {
+      while (chatBox.children.length > 30) {
         chatBox.removeChild(chatBox.children[0]);
       }
 
-      // Auto-scroll down
+      // Scroll to bottom
       chatBox.scrollTop = chatBox.scrollHeight;
     });
 
@@ -175,7 +152,7 @@ window.onload = () => {
     });
 
     window.addEventListener('keydown', (e) => {
-      // If chat input is focused, ignore movement keys
+      // Prevent movement keys while typing chat
       if (chatVisible && document.activeElement === chatInput) return;
 
       if (e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
@@ -203,23 +180,20 @@ window.onload = () => {
       draw();
     });
 
-    // CHAT TOGGLE and send message on enter
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         if (!chatVisible) {
-          // Show chat input box and focus it
-          chatBox.style.display = 'block';
+          chatInput.style.display = 'block';
           chatInput.focus();
           chatVisible = true;
           e.preventDefault();
         } else if (chatVisible && document.activeElement === chatInput) {
-          // Send message if input is focused
           const msg = chatInput.value.trim();
           if (msg.length > 0) {
             socket.emit('chatMessage', { username, message: msg });
           }
           chatInput.value = '';
-          chatBox.style.display = 'none';
+          chatInput.style.display = 'none';
           chatVisible = false;
           e.preventDefault();
         }
@@ -368,6 +342,6 @@ window.onload = () => {
   });
 
   resizeCanvas();
-};
 
+};
 
