@@ -21,20 +21,13 @@ window.onload = () => {
   const ARENA_WIDTH = 3200;
   const ARENA_HEIGHT = 2400;
 
-  // Walls array: add your obstructions here (x,y,width,height)
-  const walls = [
-    { x: 600, y: 600, width: 200, height: 40 },
-    { x: 1500, y: 1200, width: 300, height: 50 },
-    { x: 2500, y: 1800, width: 100, height: 300 },
-    // add more as needed
-  ];
-
   let socket;
   let myId = null;
   let username = null;
 
   let players = {};
   let bullets = [];
+  let walls = [];
 
   const keys = {
     up: false,
@@ -46,6 +39,9 @@ window.onload = () => {
   };
 
   let isDead = false;
+  let zoom = 1.0;
+  const MIN_ZOOM = 0.5;
+  const MAX_ZOOM = 2.0;
 
   startBtn.onclick = () => {
     const name = usernameInput.value.trim();
@@ -78,6 +74,7 @@ window.onload = () => {
     socket.on('init', (data) => {
       players = data.players;
       bullets = data.bullets;
+      walls = data.walls || [];
     });
 
     socket.on('newPlayer', (player) => {
@@ -95,6 +92,7 @@ window.onload = () => {
     socket.on('gameState', (state) => {
       players = state.players;
       bullets = state.bullets;
+      walls = state.walls || [];
 
       const me = players[myId];
       if (me) {
@@ -150,6 +148,16 @@ window.onload = () => {
       if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
       if (e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
       sendInput();
+    });
+
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        zoom = Math.min(zoom + 0.1, MAX_ZOOM);
+      } else {
+        zoom = Math.max(zoom - 0.1, MIN_ZOOM);
+      }
+      draw();
     });
   }
 
@@ -212,55 +220,34 @@ window.onload = () => {
     ctx.fill();
   }
 
-  function drawGrid(offsetX = 0, offsetY = 0) {
+  function drawWall(wall) {
+    ctx.fillStyle = '#654321'; // brown color for walls
+    ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
+  }
+
+  function drawGrid() {
     const gridSize = 40;
     ctx.strokeStyle = '#0f0';
     ctx.lineWidth = 0.5;
 
-    const arenaLeft = -offsetX;
-    const arenaTop = -offsetY;
-    const arenaRight = arenaLeft + ARENA_WIDTH;
-    const arenaBottom = arenaTop + ARENA_HEIGHT;
-
-    let startX = Math.floor(arenaLeft / gridSize) * gridSize;
-    for (let x = startX; x <= arenaRight; x += gridSize) {
-      if (x < arenaLeft || x > arenaRight) continue;
+    for (let x = 0; x <= ARENA_WIDTH; x += gridSize) {
       ctx.beginPath();
-      ctx.moveTo(x, arenaTop);
-      ctx.lineTo(x, arenaBottom);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, ARENA_HEIGHT);
       ctx.stroke();
     }
-
-    let startY = Math.floor(arenaTop / gridSize) * gridSize;
-    for (let y = startY; y <= arenaBottom; y += gridSize) {
-      if (y < arenaTop || y > arenaBottom) continue;
+    for (let y = 0; y <= ARENA_HEIGHT; y += gridSize) {
       ctx.beginPath();
-      ctx.moveTo(arenaLeft, y);
-      ctx.lineTo(arenaRight, y);
+      ctx.moveTo(0, y);
+      ctx.lineTo(ARENA_WIDTH, y);
       ctx.stroke();
     }
   }
 
-  function drawBorder(offsetX = 0, offsetY = 0) {
+  function drawBorder() {
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 3;
-
-    const x = -offsetX;
-    const y = -offsetY;
-    ctx.strokeRect(x, y, ARENA_WIDTH, ARENA_HEIGHT);
-  }
-
-  // New function: draw walls
-  function drawWalls(offsetX = 0, offsetY = 0) {
-    ctx.fillStyle = '#555';  // gray walls
-    for (const wall of walls) {
-      ctx.fillRect(
-        wall.x - offsetX,
-        wall.y - offsetY,
-        wall.width,
-        wall.height
-      );
-    }
+    ctx.strokeRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
   }
 
   function draw() {
@@ -269,28 +256,42 @@ window.onload = () => {
     const me = players[myId];
     if (!me) return;
 
-    const offsetX = me.x - canvas.width / 2;
-    const offsetY = me.y - canvas.height / 2;
+    ctx.save();
 
-    drawGrid(offsetX, offsetY);
-    drawBorder(offsetX, offsetY);
+    // center player and apply zoom
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-me.x, -me.y);
 
-    drawWalls(offsetX, offsetY);  // draw walls here
+    drawGrid();
+    drawBorder();
 
+    // draw walls
+    for (const wall of walls) {
+      drawWall(wall);
+    }
+
+    // draw all players
     for (const id in players) {
       const p = players[id];
-      drawTank(p.x - offsetX, p.y - offsetY, p.angle, p.health, id === myId, p.username, p.tankType);
+      drawTank(p.x, p.y, p.angle, p.health, id === myId, p.username, p.tankType);
     }
 
+    // draw bullets
     for (const b of bullets) {
-      drawBullet(b.x - offsetX, b.y - offsetY, b.radius || 5);
+      drawBullet(b.x, b.y, b.radius || 5);
     }
+
+    ctx.restore();
   }
 
-  function resizeCanvas() {
+  // Resize canvas to fill window
+  function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    draw();
   }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
+
+  window.addEventListener('resize', resize);
+  resize();
 };
