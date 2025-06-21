@@ -37,8 +37,15 @@
   <!-- Game canvas -->
   <canvas id="game" width="800" height="600" style="display: none;"></canvas>
 
+  <!-- Chat container -->
+  <div id="chatContainer" style="position: fixed; bottom: 10px; left: 10px; width: 300px; font-family: Arial, sans-serif; color: white; z-index: 1000;">
+    <div id="chatBox" style="height: 150px; overflow-y: auto; background: rgba(0,0,0,0.6); padding: 5px; border-radius: 5px; font-size: 14px;"></div>
+    <input id="chatInput" type="text" placeholder="Press Enter to chat..." autocomplete="off" style="width: 100%; padding: 6px; margin-top: 5px; border-radius: 5px; border: none; display: none;"/>
+  </div>
+
   <!-- Scripts -->
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
+
