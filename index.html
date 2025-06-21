@@ -10,21 +10,32 @@
   <!-- Home screen -->
   <div id="homeScreen" class="home-screen">
     <h1>Welcome to ArmyTanks.io!</h1>
-
     <input id="usernameInput" placeholder="Enter your username" maxlength="15" />
 
     <div class="start-row">
       <button id="infoBtn">Info</button>
 
-      <select id="tankDropdown">
-  <option value="default">Default Tank</option>
-  <option value="sniper">Sniper</option>
-  <option value="minigun">Minigun</option>
-  <option value="shotgun">Shotgun</option>
-</select>
+      <select id="tankTypeSelect">
+        <option value="default">Default Tank</option>
+        <option value="sniper">Sniper</option>
+        <option value="minigun">Minigun</option>
+        <option value="shotgun">Shotgun</option>
+      </select>
 
       <button id="startBtn">Start Game</button>
     </div>
+  </div>
+
+  <!-- Info Box -->
+  <div id="infoBox" style="display: none; position: fixed; top: 20px; left: 20px; background: #333; color: white; padding: 20px; border-radius: 10px;">
+    <h2>Game Info</h2>
+    <p>Use WASD or arrow keys to move, and mouse to aim and shoot. Choose your tank type and fight!</p>
+  </div>
+
+  <!-- Death screen -->
+  <div id="deathScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; display: flex; justify-content: center; align-items: center; flex-direction: column;">
+    <h1>You Died</h1>
+    <button id="respawnBtn">Respawn</button>
   </div>
 
   <!-- Game canvas -->
@@ -35,6 +46,7 @@
   <script src="game.js"></script>
 </body>
 </html>
+
 
 
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
