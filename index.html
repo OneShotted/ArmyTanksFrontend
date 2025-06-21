@@ -2,46 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ArmyTanks.io</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BlockTanks.io</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Home screen -->
   <div id="homeScreen" class="home-screen">
-    <h1>Welcome to ArmyTanks.io!</h1>
-    <input id="usernameInput" placeholder="Enter your username" maxlength="15" />
-   <select id="tankTypeSelect">
-        <option value="sniper">Sniper</option>
-        <option value="minigun">Minigun</option>
-        <option value="shotgun">Shotgun</option>
-      </select>
-      <button id="infoBtn" style="margin-left: 10px;">i</button>
-    </div>
-    <div id="infoBox">
-      <strong>Tank Types:</strong><br>
-      <b>Sniper</b>: Long range, extremely fast bullets.<br>
-      <b>Minigun</b>: Rapid fire, low bullet speed, short range.<br>
-      <b>Shotgun</b>: Big bullet, double damage, slow fire rate.
-    </div>
-    <button id="startBtn">Start Game</button>
-  </div>
-  <canvas id="game" style="display:none;"></canvas>
+    <h1>Welcome to BlockTanks.io</h1>
 
-  <div id="deathScreen" style="display:none;
-    position: fixed; top:0; left:0; right:0; bottom:0;
-    background: rgba(0,0,0,0.85);
-    color: white;
-    display: flex; flex-direction: column;
-    justify-content: center; align-items: center;
-    font-family: Arial, sans-serif;
-    font-size: 2rem;
-    z-index: 1000;">
-    <div>Oh no! You died!</div>
-    <button id="respawnBtn" style="margin-top:20px;
-      padding:10px 20px; font-size:1.5rem; cursor:pointer;">
-      Respawn
-    </button>
+    <input id="usernameInput" placeholder="Enter your username" maxlength="15" />
+
+    <div class="start-row">
+      <button id="infoBtn">Info</button>
+
+      <select id="tankDropdown">
+        <option value="default">Default Tank</option>
+        <option value="sniper">Sniper</option>
+        <option value="heavy">Heavy</option>
+      </select>
+
+      <button id="startBtn">Start Game</button>
+    </div>
   </div>
+
+  <!-- Game canvas -->
+  <canvas id="game" width="800" height="600" style="display: none;"></canvas>
+
+  <!-- Scripts -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
+
 
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script src="game.js"></script>
