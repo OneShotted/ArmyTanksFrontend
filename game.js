@@ -21,6 +21,14 @@ window.onload = () => {
   const ARENA_WIDTH = 3200;
   const ARENA_HEIGHT = 2400;
 
+  // Walls array: add your obstructions here (x,y,width,height)
+  const walls = [
+    { x: 600, y: 600, width: 200, height: 40 },
+    { x: 1500, y: 1200, width: 300, height: 50 },
+    { x: 2500, y: 1800, width: 100, height: 300 },
+    // add more as needed
+  ];
+
   let socket;
   let myId = null;
   let username = null;
@@ -209,21 +217,26 @@ window.onload = () => {
     ctx.strokeStyle = '#0f0';
     ctx.lineWidth = 0.5;
 
-    // Calculate offset remainder to keep grid steady
-    const offsetXMod = offsetX % gridSize;
-    const offsetYMod = offsetY % gridSize;
+    const arenaLeft = -offsetX;
+    const arenaTop = -offsetY;
+    const arenaRight = arenaLeft + ARENA_WIDTH;
+    const arenaBottom = arenaTop + ARENA_HEIGHT;
 
-    for (let x = -offsetXMod; x <= canvas.width; x += gridSize) {
+    let startX = Math.floor(arenaLeft / gridSize) * gridSize;
+    for (let x = startX; x <= arenaRight; x += gridSize) {
+      if (x < arenaLeft || x > arenaRight) continue;
       ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
+      ctx.moveTo(x, arenaTop);
+      ctx.lineTo(x, arenaBottom);
       ctx.stroke();
     }
 
-    for (let y = -offsetYMod; y <= canvas.height; y += gridSize) {
+    let startY = Math.floor(arenaTop / gridSize) * gridSize;
+    for (let y = startY; y <= arenaBottom; y += gridSize) {
+      if (y < arenaTop || y > arenaBottom) continue;
       ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
+      ctx.moveTo(arenaLeft, y);
+      ctx.lineTo(arenaRight, y);
       ctx.stroke();
     }
   }
@@ -237,6 +250,19 @@ window.onload = () => {
     ctx.strokeRect(x, y, ARENA_WIDTH, ARENA_HEIGHT);
   }
 
+  // New function: draw walls
+  function drawWalls(offsetX = 0, offsetY = 0) {
+    ctx.fillStyle = '#555';  // gray walls
+    for (const wall of walls) {
+      ctx.fillRect(
+        wall.x - offsetX,
+        wall.y - offsetY,
+        wall.width,
+        wall.height
+      );
+    }
+  }
+
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -248,6 +274,8 @@ window.onload = () => {
 
     drawGrid(offsetX, offsetY);
     drawBorder(offsetX, offsetY);
+
+    drawWalls(offsetX, offsetY);  // draw walls here
 
     for (const id in players) {
       const p = players[id];
